@@ -85,14 +85,18 @@ class SumoEnvironment(MultiAgentEnv):
     def reset(self):
         self.__collector.reset()
         self.__current_step = 0
+        port = sumolib.miscutils.getFreeSocketPort()
+        print(f"---------------------------- Free socket {port = } ----------------------------")
         sumo_cmd = [
             self.__sumo_bin,
             "-c", self.__sumocfg_file,
             "--max-num-vehicles", f"{self.__max_vehicles_running + MAX_VEHICLE_MARGIN}",
             "--verbose",
-            "--random"
+            "--random",
+            "--num-clients", "2"
         ]
-        traci.start(sumo_cmd)
+        traci.start(sumo_cmd, port=port)
+        traci.setOrder(1)
         traci.simulation.subscribe((tc.VAR_ARRIVED_VEHICLES_IDS,
                                     tc.VAR_DEPARTED_VEHICLES_IDS))
         traci.vehicle.subscribe('', [tc.TRACI_ID_LIST, tc.ID_COUNT])
@@ -213,7 +217,8 @@ class SumoEnvironment(MultiAgentEnv):
         """Method that performs a simulation step.
         """
         self.__current_step += 1
-        traci.simulation.step()
+        traci.simulationStep()
+        # traci.simulation.step()
 
     def __get_xml_filename(self, attribute: str) -> str:
         """Method that retrieves the file name (for network or route) present in the .sumocfg file given the attribute.
