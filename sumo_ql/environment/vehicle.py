@@ -48,12 +48,12 @@ class Vehicle:
         self.__env = environment
         self.__current_link = ""
         self.__last_link = ""
-        self.__load_time = -1.0
+        self.__load_time = -1
         self.__just_changed = False
-        self.__departure_time = -1.0
-        self.__arrival_time = -1.0
-        self.__last_link_departure_time = -1.0
-        self.__travel_time_last_link = -1.0
+        self.__departure_time = -1
+        self.__arrival_time = -1
+        self.__last_link_departure_time = -1
+        self.__travel_time_last_link = -1
         self.__route = list([self.__origin])
         self.__emission = defaultdict(lambda: 0.)
         self.__lst_em_rewards = defaultdict(lambda: 0.)
@@ -79,11 +79,11 @@ class Vehicle:
             action
         """
         self.__current_link = ""
-        self.__load_time = -1.0
-        self.__departure_time = -1.0
-        self.__arrival_time = -1.0
-        self.__last_link_departure_time = -1.0
-        self.__travel_time_last_link = -1.0
+        self.__load_time = -1
+        self.__departure_time = -1
+        self.__arrival_time = -1
+        self.__last_link_departure_time = -1
+        self.__travel_time_last_link = -1
         self.__route = list([self.__origin])
         self.__emission = defaultdict(lambda: 0)
         self.__lst_em_rewards = defaultdict(lambda: 0.)
@@ -389,7 +389,7 @@ class Vehicle:
         return self.__departure_time != -1
 
     @property
-    def travel_time(self) -> float:
+    def travel_time(self) -> int:
         """Property that return the vehicle's travel time if it traveled until a destination node.
 
         Raises:
