@@ -198,8 +198,7 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         chosen_obj_collector: DefaultCollector | None = None
         if iteration != -1:
             logging.info("Iteration %s started.", iteration)
-        observations = env.reset()
-        done = {'__all__': False}
+        observations, done = env.reset()
 
         if isinstance(config, PQLConfig):
             network_name = str(config.sumocfg).split('/')[-2]
@@ -212,6 +211,9 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         while not done['__all__']:
             actions: dict[str, int] = dict()
             for vehicle_id, vehicle in observations.items():
+                if vehicle_id.find("nl_") != -1:
+                    continue
+
                 if vehicle['reinserted'] and vehicle_id not in agents:
                     create_agent(vehicle_id)
 

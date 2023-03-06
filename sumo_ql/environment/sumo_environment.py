@@ -15,7 +15,8 @@ from gym import spaces
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 from script_configs.configs import NonLearnerConfig, PQLConfig, QLConfig
-from sumo_ql.collector.collector import LinkCollector, ObjectiveCollector
+from sumo_ql.collector.collector import (LinkCollector, ObjectiveCollector,
+                                         TripCollector)
 from sumo_ql.environment.communication_device import CommunicationDevice
 from sumo_ql.environment.od_pair import ODPair
 from sumo_ql.environment.vehicle import Objectives, Vehicle
@@ -59,6 +60,7 @@ class EnvConfig:
     min_toll_speed: float
     toll_penalty: int
     graph_neighbours: dict
+    collect_trips: bool
 
     @classmethod
     def from_sim_config(cls, config: NonLearnerConfig | QLConfig | PQLConfig, data_collector: LinkCollector) -> EnvConfig:
@@ -81,7 +83,8 @@ class EnvConfig:
                            normalize_rewards=False,
                            min_toll_speed=np.infty,
                            toll_penalty=0,
-                           graph_neighbours=dict())
+                           graph_neighbours=dict(),
+                           collect_trips=config.collect_trips)
             case QLConfig(_):
                 print(f"Optimizing: {config.objective}")
                 return cls(sumocfg_file=config.sumocfg,
@@ -99,7 +102,8 @@ class EnvConfig:
                            normalize_rewards=config.normalize_rewards,
                            min_toll_speed=config.toll_speed,
                            toll_penalty=config.toll_value,
-                           graph_neighbours=dict())
+                           graph_neighbours=dict(),
+                           collect_trips=config.collect_trips)
             case PQLConfig(_):
                 print(f"Optimizing: {config.objectives}")
                 return cls(sumocfg_file=config.sumocfg,
@@ -117,7 +121,8 @@ class EnvConfig:
                            normalize_rewards=config.normalize_rewards,
                            min_toll_speed=config.toll_speed,
                            toll_penalty=config.toll_value,
-                           graph_neighbours=dict())
+                           graph_neighbours=dict(),
+                           collect_trips=config.collect_trips)
 
 
 class SumoEnvironment(MultiAgentEnv):
@@ -167,6 +172,8 @@ class SumoEnvironment(MultiAgentEnv):
         self.__objectives: Objectives = Objectives(config.objectives)
         self.__data_fit = None
         self.__normalize_rewards = config.normalize_rewards
+        self.__trip_collector = None if not config.collect_trips else TripCollector.from_link_collector(
+            config.data_collector)
 
         network_filepath = Path(self.__sumocfg_file[:self.__sumocfg_file.rfind('/')])
         if config.fit_data_collect:
@@ -191,6 +198,12 @@ class SumoEnvironment(MultiAgentEnv):
 
     def reset(self):
         self.__link_collector.reset()
+        match self.__trip_collector:
+            case None:
+                pass
+            case _:
+                self.__trip_collector.reset()
+
         self.__current_step = 0
         sumo_cmd = [
             self.__sumo_bin,
@@ -219,7 +232,9 @@ class SumoEnvironment(MultiAgentEnv):
             traci.edge.subscribe(edge.getID(), subs_params)
 
         self.__populate_network()
-        return self.__observations
+        done = dict()
+        done['__all__'] = self.current_step >= self.__simulation_time
+        return self.__observations, done
 
     def step(self, action_dict):
         rewards = dict()
@@ -238,6 +253,12 @@ class SumoEnvironment(MultiAgentEnv):
         """Method that closes the traci run and saves collected data to csv files.
         """
         self.__link_collector.save()
+        match self.__trip_collector:
+            case None:
+                pass
+            case _:
+                self.__trip_collector.save()
+
         if self.__data_fit is not None:
             self.__data_fit.save()
         traci.close()
@@ -623,6 +644,20 @@ class SumoEnvironment(MultiAgentEnv):
             self.__observations[vehicle_id]['ready_to_act'] = False
 
             self.__verify_reinsertion_necessity(vehicle_id)
+
+        match self.__trip_collector:
+            case None:
+                pass
+            case _:
+                # travel_times = [self.__vehicles[vehicle_id].travel_time
+                #                 for vehicle_id in arrived_vehicles if self.__vehicles[vehicle_id].correct_destiny]
+                travel_times = [[], []]
+                for vehicle_id in arrived_vehicles:
+                    if vehicle_id.find("nl_") == -1 and self.__vehicles[vehicle_id].correct_destiny:
+                        travel_times[0].append(self.__vehicles[vehicle_id].travel_time)
+                    else:
+                        travel_times[1].append(self.__vehicles[vehicle_id].travel_time)
+                self.__trip_collector.append_list(travel_times, self.current_step)
 
         return rewards, done
 

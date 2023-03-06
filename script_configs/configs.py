@@ -71,6 +71,8 @@ class BaseConfig(EmptyConfig):
 
     observe_list: list[str] = field(default_factory=lambda: ["TravelTime"],
                                     metadata=describe("Parameters to collect data from.", rename="observe-list"))
+    collect_trips: bool = field(default=False, metadata=describe("Flag to indicate to collect trip travel times in "
+                                                                 "another file", rename="collect-trips"))
 
 
 @dataclass(frozen=True)
@@ -107,10 +109,10 @@ class GraphConfig(EmptyConfig):
                                                        "input file.", rename="vg-label", group=main_group()))
 
     restrictions: list[str] = field(default_factory=lambda: ["none"],
-                                   metadata=describe("List of attributes that the nodes cannot share in order to create "
-                                                     "an edge in the virtual graph. Attribute is given by the number of "
-                                                     "the column of the input file.", rename="vg-restrictions",
-                                                     group=main_group()))
+                                    metadata=describe("List of attributes that the nodes cannot share in order to create "
+                                                      "an edge in the virtual graph. Attribute is given by the number of "
+                                                      "the column of the input file.", rename="vg-restrictions",
+                                                      group=main_group()))
 
     threshold: float = field(default=0., metadata=describe("Threshold used to create an edge in the virtual graph.",
                                                            rename="vg-threshold", group=main_group()))
@@ -134,7 +136,7 @@ class GraphConfig(EmptyConfig):
                                                          group=main_group()))
 
     not_normalize: bool = field(default=False, metadata=describe("Determines if the input data will not be normalized.",
-                                                             rename="vg-not-normalize", group=main_group()))
+                                                                 rename="vg-not-normalize", group=main_group()))
 
     min_degree: int = field(default=0, metadata=describe("Only vertices with a degree bigger than or equal to this "
                                                          "value will be plotted.", rename="min-degree",
@@ -144,7 +146,7 @@ class GraphConfig(EmptyConfig):
                                                        " plotted.", rename="vg-min-step", group=main_group()))
 
     vg_dict: str | None = field(default=None, metadata=describe("Name of file containing python dictionary of virtual graph "
-                                                       "neighbours", rename="vg-dict-file", group=main_group()))
+                                                                "neighbours", rename="vg-dict-file", group=main_group()))
 
     interval: int = field(default=250, metadata=describe("Amplitude of the timestep interval of the virtual graph "
                                                          "neighbors dictionary.", group=main_group()))

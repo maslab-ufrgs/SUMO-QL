@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from datetime import datetime
 from pathlib import Path
@@ -48,6 +50,7 @@ class DefaultCollector:
         self._path.mkdir(exist_ok=True, parents=True)
         signature = Path(f"sim_{self._start_time.strftime('%H-%M-%S')}_{self._random.randint(0, 1000):03}.csv")
         csv_filename = self._path / signature
+        self._aggr_df.dropna(inplace=True, thresh=2)
         self._aggr_df.to_csv(str(csv_filename), index=False)  # compression="xz"
 
     def reset(self) -> None:
@@ -151,9 +154,12 @@ class TripCollector(DefaultCollector):
             step (int): step in which the travel times were retrieved.
         """
         obj_dict = {obj: [] for obj in self._params[1:]}
-        for item in data:
-            for obj, val in zip(self._params[1:], item):
-                obj_dict[obj].append(val)
+        for obj, item in zip(self._params[1:], data):
+            obj_dict[obj] = [np.mean(item) if len(item) != 0 else np.nan]
+        # for item in data:
+        #     for obj, val in zip(self._params[1:], item):
+        #         obj_dict[obj].append(val)
+
         data_dict = dict({"Step": [step]}, **obj_dict)
         super().append(data_dict)
 
@@ -168,6 +174,17 @@ class TripCollector(DefaultCollector):
             bool: returns a boolean that indicates if a measurement should be made.
         """
         return self._should_aggregate(step)
+
+    @classmethod
+    def from_link_collector(cls, link_collector: LinkCollector) -> TripCollector:
+        path = link_collector._path / "trips"
+        instance = super().__new__(cls)
+        super().__init__(instance,
+                         aggregation_interval=link_collector._aggregation_interval,
+                         path=path,
+                         params=["Step", "Travel Time Learning", "Travel Time Not Learning"])
+        print(f"{instance.__dict__}")
+        return instance
 
 
 class ObjectiveCollector:
