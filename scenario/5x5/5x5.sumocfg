@@ -2,7 +2,7 @@
 
 <configuration>
     <input>
-        <net-file value="5x5_TLS.net.xml"/>
+        <net-file value="5x5.net.xml"/>
         <route-files value="5x5.rou.xml"/>
     </input>
     <time>
