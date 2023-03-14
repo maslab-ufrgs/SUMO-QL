@@ -240,8 +240,9 @@ class SumoEnvironment(MultiAgentEnv):
             case _:
                 params = [param for param in self.__link_collector.watched_params[2:]]
         subs_params = [CONVERSION_DICT[param] for param in params]
-        for edge in self.__network.getEdges():
-            traci.edge.subscribe(edge.getID(), subs_params)
+        if len(subs_params) > 0:
+            for edge in self.__network.getEdges():
+                traci.edge.subscribe(edge.getID(), subs_params)
 
         self.__populate_network()
         done = dict()
@@ -755,25 +756,26 @@ class SumoEnvironment(MultiAgentEnv):
         return self.__data_fit is None
 
     def __update_link_data(self):
-        step_data = {key: [] for key in self.__link_collector.watched_params}
-        key_list = list(CONVERSION_DICT.keys())
-        value_list = list(CONVERSION_DICT.values())
-        for edge in self.__network.getEdges():
-            link_id = edge.getID()
-            link_data = traci.edge.getSubscriptionResults(link_id)
-            step_data["Link"].append(link_id)
-            for key, value in link_data.items():
-                conv_key = key_list[value_list.index(key)]
-                if key == tc.VAR_CURRENT_TRAVELTIME:
-                    speed = link_data[tc.LAST_STEP_MEAN_SPEED]
-                    if speed > HALTING_SPEED:
-                        step_data[conv_key].append(edge.getLength() / speed)
+        if self.__link_collector is not None:
+            step_data = {key: [] for key in self.__link_collector.watched_params}
+            key_list = list(CONVERSION_DICT.keys())
+            value_list = list(CONVERSION_DICT.values())
+            for edge in self.__network.getEdges():
+                link_id = edge.getID()
+                link_data = traci.edge.getSubscriptionResults(link_id)
+                step_data["Link"].append(link_id)
+                for key, value in link_data.items():
+                    conv_key = key_list[value_list.index(key)]
+                    if key == tc.VAR_CURRENT_TRAVELTIME:
+                        speed = link_data[tc.LAST_STEP_MEAN_SPEED]
+                        if speed > HALTING_SPEED:
+                            step_data[conv_key].append(edge.getLength() / speed)
+                        else:
+                            step_data[conv_key].append(np.NaN)
                     else:
-                        step_data[conv_key].append(np.NaN)
-                else:
-                    step_data[conv_key].append(value)
-        step_data["Step"] = [self.current_step for _ in step_data["Link"]]
-        self.__link_collector.append(step_data)
+                        step_data[conv_key].append(value)
+            step_data["Step"] = [self.current_step for _ in step_data["Link"]]
+            self.__link_collector.append(step_data)
 
     @property
     def __using_od_pairs(self) -> bool:
