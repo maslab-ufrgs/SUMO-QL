@@ -61,6 +61,7 @@ class EnvConfig:
     toll_penalty: int
     graph_neighbours: dict
     collect_trips: bool
+    collect_links: bool
 
     @classmethod
     def from_sim_config(cls, config: NonLearnerConfig | QLConfig | PQLConfig, data_collector: LinkCollector) -> EnvConfig:
@@ -84,7 +85,8 @@ class EnvConfig:
                            min_toll_speed=np.infty,
                            toll_penalty=0,
                            graph_neighbours=dict(),
-                           collect_trips=config.collect_trips)
+                           collect_trips=config.collect_trips,
+                           collect_links=config.collect_link_times)
             case QLConfig(_):
                 print(f"Optimizing: {config.objective}")
                 return cls(sumocfg_file=config.sumocfg,
@@ -103,7 +105,8 @@ class EnvConfig:
                            min_toll_speed=config.toll_speed,
                            toll_penalty=config.toll_value,
                            graph_neighbours=dict(),
-                           collect_trips=config.collect_trips)
+                           collect_trips=config.collect_trips,
+                           collect_links=config.collect_link_times)
             case PQLConfig(_):
                 print(f"Optimizing: {config.objectives}")
                 return cls(sumocfg_file=config.sumocfg,
@@ -122,7 +125,8 @@ class EnvConfig:
                            min_toll_speed=config.toll_speed,
                            toll_penalty=config.toll_value,
                            graph_neighbours=dict(),
-                           collect_trips=config.collect_trips)
+                           collect_trips=config.collect_trips,
+                           collect_links=config.collect_link_times)
 
 
 class SumoEnvironment(MultiAgentEnv):
@@ -161,7 +165,7 @@ class SumoEnvironment(MultiAgentEnv):
         self.__current_step = 0
         self.__max_vehicles_running = config.max_vehicles
         self.__steps_to_populate = config.steps_to_populate
-        self.__link_collector = config.data_collector
+        self.__link_collector = config.data_collector if config.collect_links else None
         self.__action_space: dict[str, spaces.Discrete] = dict()
         self.__comm_dev: dict[str, CommunicationDevice] = dict()
         self.__vehicles: dict[str, Vehicle] = dict()
@@ -197,7 +201,11 @@ class SumoEnvironment(MultiAgentEnv):
         print(f"Objectives: {len(self.__objectives.known_objectives)}")
 
     def reset(self):
-        self.__link_collector.reset()
+        match self.__link_collector:
+            case None:
+                pass
+            case _:
+                self.__link_collector.reset()
         match self.__trip_collector:
             case None:
                 pass
@@ -226,8 +234,12 @@ class SumoEnvironment(MultiAgentEnv):
             route_id = f"r_{vehicle_id}"
             traci.route.add(route_id, vehicle.original_route)
             self.__od_pairs[vehicle.od_pair].increase_load(vehicle_id)
-
-        subs_params = [CONVERSION_DICT[param] for param in self.__link_collector.watched_params[2:]]
+        match self.__link_collector:
+            case None:
+                params = []
+            case _:
+                params = [param for param in self.__link_collector.watched_params[2:]]
+        subs_params = [CONVERSION_DICT[param] for param in params]
         for edge in self.__network.getEdges():
             traci.edge.subscribe(edge.getID(), subs_params)
 
@@ -252,7 +264,11 @@ class SumoEnvironment(MultiAgentEnv):
     def close(self) -> None:
         """Method that closes the traci run and saves collected data to csv files.
         """
-        self.__link_collector.save()
+        match self.__link_collector:
+            case None:
+                pass
+            case _:
+                self.__link_collector.save()
         match self.__trip_collector:
             case None:
                 pass

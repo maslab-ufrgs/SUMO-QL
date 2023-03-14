@@ -71,6 +71,8 @@ class BaseConfig(EmptyConfig):
 
     observe_list: list[str] = field(default_factory=lambda: ["TravelTime"],
                                     metadata=describe("Parameters to collect data from.", rename="observe-list"))
+    collect_link_times: bool = field(default=False, metadata=describe("Flag to indicate to collect link data",
+                                                                      rename="collect-links"))
     collect_trips: bool = field(default=False, metadata=describe("Flag to indicate to collect trip travel times in "
                                                                  "another file", rename="collect-trips"))
 
