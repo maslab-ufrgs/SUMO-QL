@@ -182,7 +182,7 @@ class TripCollector(DefaultCollector):
         super().__init__(instance,
                          aggregation_interval=link_collector._aggregation_interval,
                          path=path,
-                         params=["Step", "Travel Time Learning", "Travel Time Not Learning"])
+                         params=["Step", "Travel Time Learning", "Travel Time Not Learning", "Dummy"])
         print(f"{instance.__dict__}")
         return instance
 

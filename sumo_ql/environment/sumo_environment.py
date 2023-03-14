@@ -668,9 +668,11 @@ class SumoEnvironment(MultiAgentEnv):
             case _:
                 # travel_times = [self.__vehicles[vehicle_id].travel_time
                 #                 for vehicle_id in arrived_vehicles if self.__vehicles[vehicle_id].correct_destiny]
-                travel_times = [[], []]
+                travel_times = [[], [], []]
                 for vehicle_id in arrived_vehicles:
-                    if vehicle_id.find("nl_") == -1 and self.__vehicles[vehicle_id].correct_destiny:
+                    if vehicle_id.find("dummy") != -1:
+                        travel_times[2].append(self.__vehicles[vehicle_id].travel_time)
+                    elif vehicle_id.find("nl_") == -1 and self.__vehicles[vehicle_id].correct_destiny:
                         travel_times[0].append(self.__vehicles[vehicle_id].travel_time)
                     else:
                         travel_times[1].append(self.__vehicles[vehicle_id].travel_time)
