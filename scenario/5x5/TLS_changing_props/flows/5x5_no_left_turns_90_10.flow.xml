@@ -1,17 +1,37 @@
 <routes>
-    <flow id="bottom0_right4"   color="255,0,0"         from="bottom0A0" to="E4right4"     begin="0"    end="300" number="90"/>
-    <flow id="left4_bottom4"    color="0,255,0"         from="left4A4"   to="E0bottom4"    begin="0"    end="300" number="90"/>
-    <flow id="top4_left0"       color="0,0,255"         from="top4E4"    to="A0left0"      begin="0"    end="300" number="90"/>
-    <flow id="right0_top0"      color="255,255,0"       from="right0E0"  to="A4top0"       begin="0"    end="300" number="90"/>
+    <flow id="nl_bottom0_right4"    color="255,0,0"         from="bottom0A0" to="E4right4"     begin="0"    end="300" number="9"/>
+    <flow id="bottom0_right4"       color="255,0,0"         from="bottom0A0" to="E4right4"     begin="0"    end="300" number="81"/>
 
-    <flow id="bottom1_right3"   color="150,0,0"         from="bottom1B0" to="E3right3"     begin="0"    end="300" number="90"/>
-    <flow id="left3_bottom3"    color="0,0,150"         from="left3A3"   to="D0bottom3"    begin="0"    end="300" number="90"/>
-    <flow id="top3_left1"       color="0,150,0"         from="top3D4"    to="A1left1"      begin="0"    end="300" number="90"/>
-    <flow id="right1_top1"      color="150,150,0"       from="right1E1"  to="B4top1"       begin="0"    end="300" number="90"/>
+    <flow id="nl_left4_bottom4"     color="0,255,0"         from="left4A4"   to="E0bottom4"    begin="0"    end="300" number="9"/>
+    <flow id="left4_bottom4"        color="0,255,0"         from="left4A4"   to="E0bottom4"    begin="0"    end="300" number="81"/>
 
-    <flow id="left1_right1"      color="150,150,150"    from="left1A1"   to="E1right1"     begin="0"    end="300" number="90"/>
-    <flow id="right3_left3"      color="150,150,150"    from="right3E3"  to="A3left3"      begin="0"    end="300" number="90"/>
+    <flow id="nl_top4_left0"        color="0,0,255"         from="top4E4"    to="A0left0"      begin="0"    end="300" number="9"/>
+    <flow id="top4_left0"           color="0,0,255"         from="top4E4"    to="A0left0"      begin="0"    end="300" number="81"/>
 
+    <flow id="nl_right0_top0"       color="255,255,0"       from="right0E0"  to="A4top0"       begin="0"    end="300" number="9"/>
+    <flow id="right0_top0"          color="255,255,0"       from="right0E0"  to="A4top0"       begin="0"    end="300" number="81"/>
+
+
+    <flow id="nl_bottom1_right3"    color="150,0,0"         from="bottom1B0" to="E3right3"     begin="0"    end="300" number="9"/>
+    <flow id="bottom1_right3"       color="150,0,0"         from="bottom1B0" to="E3right3"     begin="0"    end="300" number="81"/>
+
+    <flow id="nl_left3_bottom3"     color="0,0,150"         from="left3A3"   to="D0bottom3"    begin="0"    end="300" number="9"/>
+    <flow id="left3_bottom3"        color="0,0,150"         from="left3A3"   to="D0bottom3"    begin="0"    end="300" number="81"/>
+
+    <flow id="nl_top3_left1"        color="0,150,0"         from="top3D4"    to="A1left1"      begin="0"    end="300" number="9"/>
+    <flow id="top3_left1"           color="0,150,0"         from="top3D4"    to="A1left1"      begin="0"    end="300" number="81"/>
+
+    <flow id="nl_right1_top1"       color="150,150,0"       from="right1E1"  to="B4top1"       begin="0"    end="300" number="9"/>
+    <flow id="right1_top1"          color="150,150,0"       from="right1E1"  to="B4top1"       begin="0"    end="300" number="81"/>
+
+
+    <flow id="nl_left1_right1"      color="150,150,150"    from="left1A1"   to="E1right1"     begin="0"    end="300" number="9"/>
+    <flow id="left1_right1"         color="150,150,150"    from="left1A1"   to="E1right1"     begin="0"    end="300" number="81"/>
+
+    <flow id="nl_right3_left3"      color="150,150,150"    from="right3E3"  to="A3left3"      begin="0"    end="300" number="9"/>
+    <flow id="right3_left3"         color="150,150,150"    from="right3E3"  to="A3left3"      begin="0"    end="300" number="81"/>
+
+    <!-- dummy routes: DO NOT ALTER -->
 
     <flow id="nl_top0_bottom0"      color="0,150,150"      from="top0A4"    to="A0bottom0"    begin="0"    end="300" number="10"/>
     <flow id="nl_left0_right0"      color="0,150,150"      from="left0A0"   to="E0right0"     begin="0"    end="300" number="10"/>
