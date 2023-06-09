@@ -130,7 +130,7 @@ class GraphConfig(EmptyConfig):
                                                        rename="raw-graph", group=main_group()))
 
     giant: bool = field(default=False, metadata=describe("Flag to indicate that only the giant component of the virtual graph should be "
-                                                         "presented in its image.", group=main_group()))
+                                                         "presented in its image.", rename="giant-component", group=main_group()))
 
     not_normalize: bool = field(default=False, metadata=describe("Flag to indicate to the script not to normalize the input csv data to generate "
                                                                  "the virtual graph.", rename="vg-not-normalize", group=main_group()))
