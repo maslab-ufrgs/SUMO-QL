@@ -102,7 +102,7 @@ contains this same data aggregated by traffic light junction at each timestep in
 The next step after [generating the input file](#creating-the-virtual-graph-input-file) is to run the virtual graph script using the [virtual graph specific arguments](#virtual-graph-specific-arguments):
 
 ```
-python3 sumo_vg/run_virtual_graph --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg_threshold <threshold-of-the-virtual-graph>
+python3 sumo_vg/run_virtual_graph --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg-threshold <threshold-of-the-virtual-graph>
 ```
 
 The program will compare every line of the input csv with every other line, checking if the difference between the chosen attributes is within a defined threshold. Every attribute is normalized between $0$ and $1$ using the formula:
@@ -133,7 +133,7 @@ the junctions and passing the junction as first attribute in `vg-label` will gen
 In order to create the virtual graph at the start of the simulation, it is necessary to pass the [virtual graph specific arguments](#virtual-graph-specific-arguments) alongside the simulation arguments:
 
 ```
-python3 simulations/sumo_run.py ql --sumocfg <path-to-sumocfg-file> --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg_threshold <threshold-of-the-virtual-graph>
+python3 simulations/sumo_run.py ql --sumocfg <path-to-sumocfg-file> --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg-threshold <threshold-of-the-virtual-graph>
 ```
 
 This will also generate an image of the virtual graph and the files containing the centrality measures if they were taken. It will not, however,
@@ -164,7 +164,7 @@ used in the next step.
 
 2. Generate the virtual graph dictionary file:
 ```
-python3 sumo_vg/run_virtual_graph.py --vg-file <path-to-vg-input-file> --vg-attributes 3 4 --vg-label 2 1 --vg_threshold 0.0001 --vg-restrictions 2
+python3 sumo_vg/run_virtual_graph.py --vg-file <path-to-vg-input-file> --vg-attributes 6 7 --vg-label 2 1 --vg-threshold 0.0001 --vg-restrictions 2
 ```
 In the `vg-file` argument, it is chosen whether to use the link data or the junction data generated in the previous step. The `vg-attributes` argument determines that two
 attributes from the input csv will be used: the third and fourth column attributes. The `vg-label` argument determines that the label for each vertex of the virtual graph
@@ -187,7 +187,7 @@ It is also possible to skip the second step and generate the virtual graph at th
 While [creating the virtual graph](#creating-the-virtual-graph) or [creating the virtual graph alongside simulation](#creating-virtual-graph-alongside-simulation), using the `centrality-measures` specific virtual graph argument:
 
 ```
-python3 sumo_vg/run_virtual_graph --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg_threshold <threshold-of-the-virtual-graph> --centrality-measures <list-of-centrality-measures>
+python3 sumo_vg/run_virtual_graph --vg-file <path-to-vg-input-file> --vg-attributes <list-of-attributes> --vg-label <list-of-labels> --vg-threshold <threshold-of-the-virtual-graph> --centrality-measures <list-of-centrality-measures>
 ```
 
 This command will generate the usual virtual graph dictionary file and its image and also two more pdf files: a list of every vertex of the graph and its centrality measures and
@@ -271,21 +271,21 @@ Below are described arguments specific to virtual graph in communication usage.
 
 | Name                 | Argument                              | Description                                                                                                                                                           |
 | -------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Virtual Graph File   | `--vg_file <STR>`                     | Path to csv file that will be used as input for the virtual graph.                                                                |
-| Attributes           | `--vg_attributes <LIST-OF-INT>`       | List of attributes used to create the virtual graph.                                            |
-| Labels               | `--vg_labels <LIST-OF-INT>`           | List of attributes that will compose the label of each vertex in the virtual graph.                       |
-| Restriction          | `--vg_restriction <LIST-OF-INT>`      | List of attributes that the vertices cannot share in order to create an edge in the virtual graph. |
-| Threshold            | `--vg_threshold <FLOAT>`              | Threshold used to create an edge in the virtual graph.                                                                                                                |
-| Use OR logic         | `--use_or_logic`                      | Flag that indicates or logic instead of the and logic to create an edge between vertices given multiple attributes.                                                      |
-| Centrality Measures  | `--centrality_measures <LIST-OF-STR>` | List of centrality measures to be taken of the virtual graph.                                                                                                         |
-| No Image Flag        | `--no_image`                          | Flag to indicate to the script not to generate the virtual graph image.                                                                                                         |
-| Raw Graph Flag       | `--raw_graph`                         | Flag to indicate not to remove vertices with degree zero (i.e. raw graph).                                                                                               |
-| Giant Component Flag | `--giant`                             | Flag to indicate that only the giant component of the virtual graph should be presented in its image.                                                                         |
-| Normalize            | `--vg_normalize`                      | Flag to indicate to the script not to normalize the input csv data to generate the virtual graph.                                                                                          |
-| Minimum Degree       | `--min_degree <INT>`                  | Determines the minimum degree a vertex should have in order to be plotted in the virtual graph image.                                                                                              |
-| Minimum Step         | `--vg_min_step <INT>`                 | Determines the minimum step a vertex should have in order to be plotted in the graph image.                                                                                                |
+| Virtual Graph File   | `--vg-file <STR>`                     | Path to csv file that will be used as input for the virtual graph.                                                                |
+| Attributes           | `--vg-attributes <LIST-OF-INT>`       | List of attributes used to create the virtual graph.                                            |
+| Labels               | `--vg-labels <LIST-OF-INT>`           | List of attributes that will compose the label of each vertex in the virtual graph.                       |
+| Restriction          | `--vg-restriction <LIST-OF-INT>`      | List of attributes that the vertices cannot share in order to create an edge in the virtual graph. |
+| Threshold            | `--vg-threshold <FLOAT>`              | Threshold used to create an edge in the virtual graph.                                                                                                                |
+| Use OR logic         | `--use-or-logic`                      | Flag that indicates or logic instead of the and logic to create an edge between vertices given multiple attributes.                                                      |
+| Centrality Measures  | `--centrality-measures <LIST-OF-STR>` | List of centrality measures to be taken of the virtual graph.                                                                                                         |
+| No Image Flag        | `--no-image`                          | Flag to indicate to the script not to generate the virtual graph image.                                                                                                         |
+| Raw Graph Flag       | `--raw-graph`                         | Flag to indicate not to remove vertices with degree zero (i.e. raw graph).                                                                                               |
+| Giant Component Flag | `--giant-component`                             | Flag to indicate that only the giant component of the virtual graph should be presented in its image.                                                                         |
+| Normalize            | `--vg-normalize`                      | Flag to indicate to the script not to normalize the input csv data to generate the virtual graph.                                                                                          |
+| Minimum Degree       | `--min-degree <INT>`                  | Determines the minimum degree a vertex should have in order to be plotted in the virtual graph image.                                                                                              |
+| Minimum Step         | `--vg-min-step <INT>`                 | Determines the minimum step a vertex should have in order to be plotted in the graph image.                                                                                                |
 | Interval             | `--interval <INT>`                    | Amplitude of the timestep interval of the virtual graph neighbors dictionary.                                                                                           |
-| Graph Dictionary     | `--vg_dict_file <STR>`                | Path to pickle file containing the python dictionary of the virtual graph. <br>This is used in the C2I communication during the simulation and isn't used to generate the virtual graph.                                                                                               |
+| Graph Dictionary     | `--vg-dict-file <STR>`                | Path to pickle file containing the python dictionary of the virtual graph. <br>This is used in the C2I communication during the simulation and isn't used to generate the virtual graph.                                                                                               |
 
 ## List of Possible Observation Parameters
 
