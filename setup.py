@@ -19,10 +19,10 @@ setup(
         'seaborn',
         'cairocffi'
     ],
-    author='guidytz',
-    author_email='guidytz@gmail.com',
-    url='https://github.com/guidytz/SUMO-QL',
+    author='guidytz, hugobbi',
+    author_email='guidytz@gmail.com, hgugobbi@gmail.com',
+    url='https://github.com/maslab-ufrgs/SUMO-QL',
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    description='A python code to handle Multi-agent Reinforcement Learning using SUMO for microscopic traffic routing.'
+    description='A python code to handle Multi-agent Reinforcement Learning, where the agents are drivers, using SUMO as a microscopic traffic simulation. This code also handles the creation of a graph that links different elements of the traffic network that have similar patterns.'
 )
