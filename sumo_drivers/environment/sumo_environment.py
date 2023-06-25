@@ -182,7 +182,9 @@ class SumoEnvironment(MultiAgentEnv):
         for node in self.__network.getNodes():
             self.__comm_dev[node.getID()] = CommunicationDevice(node, config.max_comm_dev_queue_size,
                                                                 config.communication_success_rate, self)
-            self.__action_space[node.getID()] = spaces.Discrete(len(node.getOutgoing()))
+            outgoing_size = len(node.getOutgoing())
+            self.__action_space[node.getID()] = spaces.Discrete(
+                outgoing_size) if outgoing_size > 0 else spaces.Discrete(1, start=-1)
 
         self.__vehicles, self.__od_pairs = self.__instantiate_vehicles_and_od_pairs(config.right_arrival_bonus,
                                                                                     config.wrong_arrival_penalty,
