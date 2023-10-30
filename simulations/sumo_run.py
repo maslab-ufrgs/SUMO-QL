@@ -12,15 +12,18 @@ from script_configs import create_parser
 from script_configs.configs import NonLearnerConfig, PQLConfig, QLConfig
 from sumo_drivers.agent.q_learning import PQLAgent, QLAgent
 from sumo_drivers.collector.collector import DefaultCollector, LinkCollector
-from sumo_drivers.environment.sumo_environment import (EnvConfig,
-                                                       SumoEnvironment)
+from sumo_drivers.environment.sumo_environment import EnvConfig, SumoEnvironment
 from sumo_drivers.exploration.epsilon_greedy import EpsilonGreedy
 from sumo_vg.virtual_graph import generate_graph_neighbors_dict
 
 SAVE_OBJ_CHOSEN = False
 
 
-def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = datetime.now(), iteration: int = -1):
+def run_sim(
+    config: NonLearnerConfig | QLConfig | PQLConfig,
+    date: datetime = datetime.now(),
+    iteration: int = -1,
+):
     """Function used to run the simulations, given a set of arguments passed to the script and the iteration (run
     number).
 
@@ -54,24 +57,26 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         else:
             # generates graph neighbors dict
             print("Generating graph neighbors dictionary...")
-            network_name = str(config.sumocfg).split('/')[-2]
-            vg_neighbors_dict = generate_graph_neighbors_dict(config.virtual_graph.file,
-                                                              config.virtual_graph.attributes,
-                                                              config.virtual_graph.labels,
-                                                              config.virtual_graph.restrictions,
-                                                              config.virtual_graph.threshold,
-                                                              config.virtual_graph.use_or,
-                                                              config.virtual_graph.measures,
-                                                              config.virtual_graph.no_image,
-                                                              config.virtual_graph.raw,
-                                                              config.virtual_graph.giant,
-                                                              config.virtual_graph.not_normalize,
-                                                              config.virtual_graph.min_degree,
-                                                              config.virtual_graph.min_step,
-                                                              arestas_para_custoso=2000,
-                                                              precisao=10,
-                                                              intervalo_vizinhos=config.virtual_graph.interval,
-                                                              network_name=network_name)
+            network_name = str(config.sumocfg).split("/")[-2]
+            vg_neighbors_dict = generate_graph_neighbors_dict(
+                config.virtual_graph.file,
+                config.virtual_graph.attributes,
+                config.virtual_graph.labels,
+                config.virtual_graph.restrictions,
+                config.virtual_graph.threshold,
+                config.virtual_graph.use_or,
+                config.virtual_graph.measures,
+                config.virtual_graph.no_image,
+                config.virtual_graph.raw,
+                config.virtual_graph.giant,
+                config.virtual_graph.not_normalize,
+                config.virtual_graph.min_degree,
+                config.virtual_graph.min_step,
+                arestas_para_custoso=2000,
+                precisao=10,
+                intervalo_vizinhos=config.virtual_graph.interval,
+                network_name=network_name,
+            )
 
     def create_log(dirname: str, date: datetime) -> None:
         """Method that creates a log file that has information of beginning and end of simulations when making multiple
@@ -89,21 +94,25 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         log_directory = Path(f"log/{dirname}")
         log_directory.mkdir(exist_ok=True, parents=True)
 
-        logging.basicConfig(format='%(asctime)s: %(message)s',
-                            datefmt='%d-%m-%Y %H:%M:%S',
-                            filename=f'log/{dirname}/mult_sims_{date.strftime("%d-%m-%y_%H-%M-%S")}.log',
-                            level=logging.INFO)
+        logging.basicConfig(
+            format="%(asctime)s: %(message)s",
+            datefmt="%d-%m-%Y %H:%M:%S",
+            filename=f'log/{dirname}/mult_sims_{date.strftime("%d-%m-%y_%H-%M-%S")}.log',
+            level=logging.INFO,
+        )
 
-    def generate_data_collector(cfgfile: str,
-                                sim_steps: int,
-                                pop_steps: int,
-                                comm_succ_rate: float,
-                                moving_avg_gap: int,
-                                date: datetime,
-                                uses_virtual_graph: bool,
-                                agent_type: str,
-                                n_runs: int = 1,
-                                observe_list: list[str] | None = None) -> LinkCollector:
+    def generate_data_collector(
+        cfgfile: str,
+        sim_steps: int,
+        pop_steps: int,
+        comm_succ_rate: float,
+        moving_avg_gap: int,
+        date: datetime,
+        uses_virtual_graph: bool,
+        agent_type: str,
+        n_runs: int = 1,
+        observe_list: list[str] | None = None,
+    ) -> LinkCollector:
         """Method that generates a data collector based on the information used in the simulation.
 
         Args:
@@ -120,7 +129,7 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         if observe_list is None:
             raise RuntimeError("Objectives list cannot be empty!")
 
-        main_simulation_name = str(cfgfile).split('/')[-2]
+        main_simulation_name = str(cfgfile).split("/")[-2]
         additional_folders = list()
 
         learning_folder = Path("not_learning")
@@ -138,7 +147,9 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         objectives_folder = Path(f"opt_{'_'.join(observe_list)}")
         additional_folders.append(objectives_folder)
 
-        vg_folder = Path("virtual_graph") if uses_virtual_graph else Path("no_virtual_graph")
+        vg_folder = (
+            Path("virtual_graph") if uses_virtual_graph else Path("no_virtual_graph")
+        )
         additional_folders.append(vg_folder)
 
         if n_runs > 1:
@@ -146,13 +157,17 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
             additional_folders.append(batch_folder)
             create_log(main_simulation_name, date)
 
-        return LinkCollector(network_name=main_simulation_name,
-                             aggregation_interval=moving_avg_gap,
-                             additional_folders=additional_folders,
-                             params=observe_list,
-                             date=date)
+        return LinkCollector(
+            network_name=main_simulation_name,
+            aggregation_interval=moving_avg_gap,
+            additional_folders=additional_folders,
+            params=observe_list,
+            date=date,
+        )
 
-    def create_environment(config: NonLearnerConfig | QLConfig | PQLConfig, vg_neighbors_dict: dict) -> SumoEnvironment:
+    def create_environment(
+        config: NonLearnerConfig | QLConfig | PQLConfig, vg_neighbors_dict: dict
+    ) -> SumoEnvironment:
         """Method that creates a SUMO environment given the arguments necessary to it.
 
         Args:
@@ -178,56 +193,71 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         if config.sumocfg is None:
             raise ValueError("Sumo cfg file should not be none here")
 
-        data_collector = generate_data_collector(cfgfile=config.sumocfg,
-                                                 sim_steps=config.steps,
-                                                 pop_steps=pop_steps,
-                                                 comm_succ_rate=comm_success_rate,
-                                                 moving_avg_gap=config.aw,
-                                                 date=date,
-                                                 uses_virtual_graph=uses_virtual_graph,
-                                                 agent_type=agent_type,
-                                                 n_runs=config.nruns,
-                                                 observe_list=config.observe_list)
+        data_collector = generate_data_collector(
+            cfgfile=config.sumocfg,
+            sim_steps=config.steps,
+            pop_steps=pop_steps,
+            comm_succ_rate=comm_success_rate,
+            moving_avg_gap=config.aw,
+            date=date,
+            uses_virtual_graph=uses_virtual_graph,
+            agent_type=agent_type,
+            n_runs=config.nruns,
+            observe_list=config.observe_list,
+        )
 
         env_config = EnvConfig.from_sim_config(config, data_collector)
         environment = SumoEnvironment(env_config)
         return environment
 
     def run(iteration) -> None:
-        """Method that runs a simulation.
-        """
+        """Method that runs a simulation."""
         chosen_obj_collector: DefaultCollector | None = None
         if iteration != -1:
             logging.info("Iteration %s started.", iteration)
         observations = env.reset()
-        done = {'__all__': False}
+        done = {"__all__": False}
 
         if isinstance(config, PQLConfig):
-            network_name = str(config.sumocfg).split('/')[-2]
-            chosen_obj_collector = DefaultCollector(1,
-                                                    Path("results/ChosenObj/") /
-                                                    f"{network_name}" /
-                                                    f"{date.strftime('%y_%m_%d')}",
-                                                    ["Step"] + config.objectives)
+            network_name = str(config.sumocfg).split("/")[-2]
+            chosen_obj_collector = DefaultCollector(
+                1,
+                Path("results/ChosenObj/")
+                / f"{network_name}"
+                / f"{date.strftime('%y_%m_%d')}",
+                ["Step"] + config.objectives,
+            )
 
-        while not done['__all__']:
+        while not done["__all__"]:
             actions: dict[str, int] = dict()
             for vehicle_id, vehicle in observations.items():
-                if vehicle['reinserted'] and vehicle_id not in agents and not isinstance(config, NonLearnerConfig):
+                if (
+                    vehicle["reinserted"]
+                    and vehicle_id not in agents
+                    and not isinstance(config, NonLearnerConfig)
+                ):
                     create_agent(vehicle_id)
 
-            chosen_sum = [0 for _ in range(len(config.objectives))] if isinstance(config, PQLConfig) else []
+            chosen_sum = (
+                [0 for _ in range(len(config.objectives))]
+                if isinstance(config, PQLConfig)
+                else []
+            )
             for vehicle_id, vehicle in observations.items():
-                if vehicle['ready_to_act'] and vehicle_id in agents:
-                    handle_communication(vehicle_id, vehicle['current_state'])
-                    current_state = vehicle['current_state']
-                    available_actions = vehicle['available_actions']
+                if vehicle["ready_to_act"] and vehicle_id in agents:
+                    handle_communication(vehicle_id, vehicle["current_state"])
+                    current_state = vehicle["current_state"]
+                    available_actions = vehicle["available_actions"]
                     match agents[vehicle_id]:
-                        case QLAgent(_) as agent:
-                            actions[vehicle_id] = agent.act(current_state, available_actions)
+                        case QLAgent() as agent:
+                            actions[vehicle_id] = agent.act(
+                                current_state, available_actions
+                            )
                             agents[vehicle_id] = agent
-                        case PQLAgent(_) as agent:
-                            actions[vehicle_id], chosen_obj = agent.act(current_state, available_actions)
+                        case PQLAgent() as agent:
+                            actions[vehicle_id], chosen_obj = agent.act(
+                                current_state, available_actions
+                            )
                             agents[vehicle_id] = agent
                             if chosen_obj != -1:
                                 chosen_sum[chosen_obj] += 1
@@ -235,10 +265,16 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
             if isinstance(config, PQLConfig):
                 match chosen_obj_collector:
                     case None:
-                        raise RuntimeError("Collector for chosen objectives should not be None here.")
-                    case DefaultCollector(_):
-                        obj_collection_dict = {key: [val]
-                                               for key, val in zip(env.objectives.objectives_str_list, chosen_sum)}
+                        raise RuntimeError(
+                            "Collector for chosen objectives should not be None here."
+                        )
+                    case DefaultCollector():
+                        obj_collection_dict = {
+                            key: [val]
+                            for key, val in zip(
+                                env.objectives.objectives_str_list, chosen_sum
+                            )
+                        }
                         obj_collection_dict["Step"] = [env.current_step]
                         chosen_obj_collector.append(obj_collection_dict)
 
@@ -247,12 +283,12 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
             for vehicle_id, reward in rewards.items():
                 if vehicle_id in agents:
                     if vehicle_id in done:
-                        previous_state = observations[vehicle_id]['previous_state']
-                        next_state = observations[vehicle_id]['current_state']
+                        previous_state = observations[vehicle_id]["previous_state"]
+                        next_state = observations[vehicle_id]["current_state"]
                         handle_learning(vehicle_id, previous_state, next_state, reward)
                     else:
-                        previous_state = observations[vehicle_id]['last_link_state']
-                        next_state = observations[vehicle_id]['previous_state']
+                        previous_state = observations[vehicle_id]["last_link_state"]
+                        next_state = observations[vehicle_id]["previous_state"]
                         handle_learning(vehicle_id, previous_state, next_state, reward)
         env.close()
         if iteration != -1:
@@ -267,19 +303,28 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
 
         match config:
             case QLConfig(_):
-                agents[vehicle_id] = QLAgent(action_space=env.action_space,
-                                             exploration_strategy=EpsilonGreedy(initial_epsilon=0.05, min_epsilon=0.05),
-                                             alpha=config.alpha,
-                                             gamma=config.gamma)
+                agents[vehicle_id] = QLAgent(
+                    action_space=env.action_space,
+                    exploration_strategy=EpsilonGreedy(
+                        initial_epsilon=0.05, min_epsilon=0.05
+                    ),
+                    alpha=config.alpha,
+                    gamma=config.gamma,
+                )
             case PQLConfig(_):
-                agents[vehicle_id] = PQLAgent(action_space=env.action_space,
-                                              exploration_strategy=EpsilonGreedy(
-                                                  initial_epsilon=0.05, min_epsilon=0.05),
-                                              gamma=config.gamma)
+                agents[vehicle_id] = PQLAgent(
+                    action_space=env.action_space,
+                    exploration_strategy=EpsilonGreedy(
+                        initial_epsilon=0.05, min_epsilon=0.05
+                    ),
+                    gamma=config.gamma,
+                )
             case _:
                 raise RuntimeError(f"Config class not recognized.")
 
-    def handle_learning(vehicle_id: str, origin_node: str, destination_node: str, reward: np.ndarray) -> None:
+    def handle_learning(
+        vehicle_id: str, origin_node: str, destination_node: str, reward: np.ndarray
+    ) -> None:
         """Method that takes care of the learning process for the agent given.
 
         Args:
@@ -294,12 +339,12 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
         try:
             action = env.get_action(origin_node, destination_node)
             match agents[vehicle_id]:
-                case QLAgent(_) as agent:
+                case QLAgent() as agent:
                     assert isinstance(config, QLConfig)
                     obj = 0 if config.objective == "TravelTime" else 1
                     agent.learn(action, origin_node, destination_node, reward[obj])
                     agents[vehicle_id] = agent
-                case PQLAgent(_) as agent:
+                case PQLAgent() as agent:
                     agent.learn(action, origin_node, destination_node, reward)
                     agents[vehicle_id] = agent
 
@@ -330,7 +375,9 @@ def run_sim(config: NonLearnerConfig | QLConfig | PQLConfig, date: datetime = da
     run(iteration)
 
 
-def parse_args(command_line: str | None = None) -> NonLearnerConfig | QLConfig | PQLConfig:
+def parse_args(
+    command_line: str | None = None,
+) -> NonLearnerConfig | QLConfig | PQLConfig:
     """Method that parse arguments coming from command line and returns a config with all the atributes necessary for a
     simulation run
 
@@ -354,8 +401,7 @@ def parse_args(command_line: str | None = None) -> NonLearnerConfig | QLConfig |
 
 
 def main(command_line=None):
-    """Main script funcion that starts the running process.
-    """
+    """Main script funcion that starts the running process."""
     config = parse_args(command_line)
 
     if config.nruns == 1:
@@ -366,7 +412,10 @@ def main(command_line=None):
     if config.parallel:
         sys.setrecursionlimit(3000)
         with Pool(processes=os.cpu_count()) as pool:
-            _ = [pool.apply_async(run_sim, args=(config, curr_date, it)) for it in range(config.nruns)]
+            _ = [
+                pool.apply_async(run_sim, args=(config, curr_date, it))
+                for it in range(config.nruns)
+            ]
             pool.close()
             pool.join()
         return
@@ -375,5 +424,5 @@ def main(command_line=None):
         run_sim(config, curr_date, i)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
