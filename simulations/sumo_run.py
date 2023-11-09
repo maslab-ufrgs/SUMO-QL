@@ -72,9 +72,9 @@ def run_sim(
                 config.virtual_graph.not_normalize,
                 config.virtual_graph.min_degree,
                 config.virtual_graph.min_step,
-                arestas_para_custoso=2000,
-                precisao=10,
-                intervalo_vizinhos=config.virtual_graph.interval,
+                costly_edges=2000,
+                precision=10,
+                neighbors_interval=config.virtual_graph.interval,
                 network_name=network_name,
             )
 

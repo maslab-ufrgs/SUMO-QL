@@ -26,39 +26,30 @@ def is_num(num_str: str) -> bool:
     """
     try:
         float(num_str)
+        return True
     except ValueError:
         return False
-    return True
 
 
 def has_empty_attribute(line: dict, keys: list) -> bool:
     """
     Recebe um dicionário e as keys deste dicionário, verificando se existe nele alguma entrada vazia
     """
-    for key in keys:
-        if line[key] == "":
-            return True
-    return False
+    return any(line[key] == "" for key in keys)
 
 
 def has_zero_occupancy(row: dict) -> bool:
     """
     Checks if row has occupancy of zero
     """
-    if float(row["Occupancy"]) == 0:
-        return True
-    else:
-        return False
+    return float(row["Occupancy"]) == 0
 
 
 def is_border_link(link: str) -> bool:
     """
     Checks if link is border link (only makes sense in grid network)
     """
-    if "top" in link or "bottom" in link or "right" in link or "left" in link:
-        return True
-    else:
-        return False
+    return "top" in link or "bottom" in link or "right" in link or "left" in link
 
 
 def should_include_line(
@@ -80,15 +71,12 @@ def should_normalize(key_value: list) -> bool:
     """
     Determines if an imported column of the input csv should be normalized or not.
     """
-    if is_num(str(key_value)):
-        return True
-
-    return False
+    return is_num(str(key_value))
 
 
 def csv_import(
     csv_path: str, first_id: int
-) -> list:  # recebe o caminho e o nome do arquivo a ser lido
+) -> tuple[list, list]:  # recebe o caminho e o nome do arquivo a ser lido
     """
     Lê os dados do csv e retorna cada linha como um dicionário cujas keys são o header do csv e uma lista com as keys do dicionário
     """
@@ -98,7 +86,7 @@ def csv_import(
         keys = list(reading.fieldnames or [])  # guardas as keys do dicionário
 
         attribute_name = keys[first_id - 1]
-        link_as_vertex = True if attribute_name == "Link" else False
+        link_as_vertex = attribute_name == "Link"
 
         lines = []
         id = 0  # identificador usado para criar arestas
@@ -131,18 +119,13 @@ def normalize_list(attributes: list) -> list:
     minim = min(attributes)
     maxim = max(attributes)
 
-    normalized_attributes = []
-
     if (maxim - minim) == 0:
         exit("Erro na normalização: divisão por zero")
 
-    for attribute in attributes:
-        normalized_attributes.append((attribute - minim) / (maxim - minim))
-
-    return normalized_attributes
+    return [(attribute - minim) / (maxim - minim) for attribute in attributes]
 
 
-def normalize_dict(dicts: list, keys: list, labels: list) -> list:
+def normalize_dict(dicts: list, keys: list, labels: list) -> tuple[list, list]:
     """
     Normaliza os valores de uma lista de dicionários
     """
@@ -152,13 +135,9 @@ def normalize_dict(dicts: list, keys: list, labels: list) -> list:
         if key not in labels and should_normalize(
             dicts[0][key]
         ):  # só os atributos que são númericos e não compõem o label serão normalizados
-            attributes = (
-                []
-            )  # lista de atributos, usada para calcular fórmula da normalização
-            for dic in normalized_dicts:
-                # guarda todos os valores de uma key do dicionário na lista
-                attributes.append(dic[key])
-
+            attributes = [
+                dic[key] for dic in normalized_dicts
+            ]  # lista de atributos, usada para calcular fórmula da normalização
             attributes = normalize_list(attributes)
 
             for dic, norm_attribute in zip(normalized_dicts, attributes):
@@ -204,24 +183,17 @@ def valid_ids(lista_ids: list) -> bool:
     """
     id_pairs = itertools.combinations(lista_ids, 2)  # cria pares de ids
 
-    for pair in id_pairs:
-        if pair[0] == pair[1]:  # se qualquer par for igual, retorna False
-            return False
-
-    return True  # caso contrário, retorna True
+    return not any(pair[0] == pair[1] for pair in id_pairs)
 
 
 def gen_attrib_list_str(attributes: list) -> str:
     """
     Recebe uma lista de atributos e monta uma string com estes atributos separados por "-"
     """
-    attrib_str = ""
-    for i in range(len(attributes)):
-        if i == len(attributes) - 1:
-            attrib_str += str(attributes[i])
-        else:
-            attrib_str += f"{str(attributes[i])}-"
-    return attrib_str
+    return "".join(
+        str(attributes[i]) if i == len(attributes) - 1 else f"{str(attributes[i])}-"
+        for i in range(len(attributes))
+    )
 
 
 def get_file_name(directory_file: str) -> str:
@@ -230,10 +202,7 @@ def get_file_name(directory_file: str) -> str:
     Output: str containing the name of the file
     """
     path = Path(directory_file)
-    if path.suffix == ".csv":
-        return path.stem
-    else:
-        return directory_file
+    return path.stem if path.suffix == ".csv" else directory_file
 
 
 def build_name(threshold: float, attributes: list, directory_file: str) -> str:
@@ -299,19 +268,11 @@ def verify_edge(result_list: list, use_or_logic: bool) -> bool:
     Dependendo da lógica escolhida, verifica se deve ser criada uma aresta entre um par de nodos
     """
     if use_or_logic:
-        for result in result_list:
-            if (
-                result == 1
-            ):  # dada a lista final de resultados, se houver algum verdadeiro, a aresta é criada
-                return True
-        return False
+        # dada a lista final de resultados, se houver algum verdadeiro, a aresta é criada
+        return any(result == 1 for result in result_list)
     else:
-        for result in result_list:
-            if (
-                result == 0
-            ):  # dada a lista final de resultados, se houver algum falso, a aresta não é criada
-                return False
-        return True
+        # dada a lista final de resultados, se houver algum falso, a aresta não é criada
+        return not any(result == 0 for result in result_list)
 
 
 def in_restriction(v1: dict, v2: dict, restriction_list: list | None) -> bool:
@@ -321,9 +282,9 @@ def in_restriction(v1: dict, v2: dict, restriction_list: list | None) -> bool:
     para os mesmos atributos restritivos
     """
     if restriction_list is not None:
-        for restriction in restriction_list:
-            if v1[restriction] == v2[restriction]:
-                return False
+        return not any(
+            v1[restriction] == v2[restriction] for restriction in restriction_list
+        )
     return True
 
 
@@ -382,9 +343,7 @@ def has_constly_measure(measures: list | None, costly_measures: list) -> bool:
     Determina se lista de medidas possui alguma medida considerada custosa
     """
     if measures is not None:
-        for costly_measure in costly_measures:
-            if costly_measure in measures:
-                return True
+        return any(costly_measure in measures for costly_measure in costly_measures)
     return False
 
 
@@ -407,9 +366,7 @@ def calculate_frequency_keys(graph: ig.Graph, attribute: str) -> dict:
     Input: graph representing network composed of nodes that are dictionaries
     Output: dictionary with the frequency that the specified key appears in the graph
     """
-    list_keys = []
-    for v in graph.vs:
-        list_keys.append(v[attribute])
+    list_keys = [v[attribute] for v in graph.vs]
 
     dict_freq_keys = dict(Counter(key for key in list_keys))
 
@@ -422,9 +379,7 @@ def calculate_frequency_keys(graph: ig.Graph, attribute: str) -> dict:
     processed_dict = dict()
     processed_dict[attribute] = sorted_dict_freq_keys.keys()
 
-    frequency_list = []
-    for item in list(sorted_dict_freq_keys.items()):
-        frequency_list.append(item[1])
+    frequency_list = [item[1] for item in list(sorted_dict_freq_keys.items())]
 
     processed_dict["frequency"] = frequency_list
 
@@ -529,10 +484,7 @@ def color_list(g: ig.Graph) -> list:
     """
     degrees = g.degree()
 
-    if len(degrees) == 0:
-        avg_degree = 0
-    else:
-        avg_degree = sum(degrees) / len(degrees)
+    avg_degree = 0 if len(degrees) == 0 else sum(degrees) / len(degrees)
 
     colors = []
     for degree in degrees:
@@ -569,14 +521,11 @@ def determine_visual_style(g: ig.Graph) -> dict:
     return visual_style
 
 
-def has_min_degree(grafo: ig.Graph, d_minimo: float) -> bool:
+def has_min_degree(graph: ig.Graph, min_d: float) -> bool:
     """
     Determina se o grafo possui algum vértice com grau mínimo passado
     """
-    for v in grafo.vs:
-        if v.degree() < d_minimo:
-            return True
-    return False
+    return any(v.degree() < min_d for v in graph.vs)
 
 
 def calc_max_step(dicts: list, keys: list) -> int:
@@ -585,9 +534,7 @@ def calc_max_step(dicts: list, keys: list) -> int:
     """
     step_name = list(filter(lambda x: x == "Step" or x == "step", keys))[0]
 
-    step_list = []
-    for v in dicts:
-        step_list.append(v[step_name])
+    step_list = [v[step_name] for v in dicts]
 
     return int(max(step_list))
 
@@ -599,15 +546,9 @@ def is_within_interval(
     Recebe número e verifica se este está dentro de um intervalo [x, y) (ou, se for o último intervalo, [w, z])
     """
     if not last_interval:
-        if value >= inf_threshold and value < sup_threshold:
-            return True
-        else:
-            return False
+        return value >= inf_threshold and value < sup_threshold
     else:
-        if value >= inf_threshold and value <= sup_threshold:
-            return True
-        else:
-            return False
+        return value >= inf_threshold and value <= sup_threshold
 
 
 def neighbors(list_attribute_vertices: list) -> list:
@@ -638,15 +579,15 @@ def neighbors_within_interval(
     sup_threshold = interval[1]
 
     # para cada vertice, verificar se esta no intervalo e adicionar à lista
-    neighbors_within = []
-    for neighbor in neighbors:
+    neighbors_within = set(
+        neighbor[attribute_name]
+        for neighbor in neighbors
         if is_within_interval(
             inf_threshold, sup_threshold, neighbor[step_name], last_interval
-        ):
-            if neighbor[attribute_name] not in neighbors_within:
-                neighbors_within.append(neighbor[attribute_name])
+        )
+    )
 
-    return neighbors_within
+    return list(neighbors_within)
 
 
 def build_neighbors(
@@ -658,14 +599,9 @@ def build_neighbors(
     neighbors = dict()
     step_name = list(filter(lambda x: x == "Step" or x == "step", keys))[0]
 
-    list_attributes = []
-    for v in graph.vs:
-        list_attributes.append(v[attribute_name])
+    list_attributes = [v[attribute_name] for v in graph.vs]
 
-    unique_attributes_list = []
-    for attribute in list_attributes:
-        if attribute not in unique_attributes_list:
-            unique_attributes_list.append(attribute)
+    unique_attributes_list = list(set(attribute for attribute in list_attributes))
 
     # constroi lista de intervalos (compostos por uma tupla) utilizando o último step e o tamanho do intervalo selecionado: ["[0-1)", "[1-2) ... [n-1, n]"]
     intervals = []
@@ -687,7 +623,7 @@ def build_neighbors(
 
         # lista de vértices do grafo com atributo especificado
         list_attribute_vertices = list(
-            filter(lambda v: v[attribute_name] == attribute, graph.vs)
+            filter(lambda v: v[attribute_name] == attribute, graph.vs)  # type: ignore
         )
 
         for i in range(interval_num):
