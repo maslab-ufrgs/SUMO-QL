@@ -8,6 +8,7 @@ from collections import Counter
 from csv import DictReader
 from decimal import Decimal, getcontext
 from pathlib import Path
+from typing import Callable
 
 import igraph as ig
 import matplotlib.pyplot as plt
@@ -31,38 +32,23 @@ def is_num(num_str: str) -> bool:
         return False
 
 
-def has_empty_attribute(line: dict, keys: list) -> bool:
-    """
-    Recebe um dicionário e as keys deste dicionário, verificando se existe nele alguma entrada vazia
-    """
-    return any(line[key] == "" for key in keys)
-
-
-def has_zero_occupancy(row: dict) -> bool:
-    """
-    Checks if row has occupancy of zero
-    """
-    return float(row["Occupancy"]) == 0
-
-
-def is_border_link(link: str) -> bool:
-    """
-    Checks if link is border link (only makes sense in grid network)
-    """
-    return "top" in link or "bottom" in link or "right" in link or "left" in link
-
-
-def should_include_line(
-    line: dict[str, list], keys: list, link_as_vertex: bool
-) -> bool:
-    """
+def should_include_line(row: dict[str, str], keys: list, link_as_vertex: bool) -> bool:
+    """>
     Checks if line should be considered or discarded. This line will become a vertex of the virtual graph.
     Doesn't include line containing empty attribute, zero occupancy or border links (if graph will be composed of links).
     """
+    # Checks if link is border link (only makes sense in grid network)
+    is_border_link: Callable[[str], bool] = (
+        lambda link: "top" in link
+        or "bottom" in link
+        or "right" in link
+        or "left" in link
+    )
+
     if link_as_vertex:
-        if is_border_link(line["Link"]):
+        if is_border_link(row["Link"]):
             return False
-    if has_empty_attribute(line, keys) or has_zero_occupancy(line):
+    if float(row["Occupancy"]) == 0 or any(row[key] == "" for key in keys):
         return False
     return True
 
@@ -289,7 +275,7 @@ def in_restriction(v1: dict, v2: dict, restriction_list: list | None) -> bool:
 
 
 def in_threshold(
-    v1: dict, v2: dict, attribute: str, threshold: float, precision: float
+    v1: dict, v2: dict, attribute: str, threshold: float, precision: int
 ) -> bool:
     """
     Verifica se um atributo entre dois dicionários está dentro do limiar ou não
@@ -302,10 +288,10 @@ def in_threshold(
 def build_edges(
     attributes: list,
     dicts: list,
-    restrictions: list,
+    restrictions: list | None,
     use_or_logic: bool,
     threshold: float,
-    precision: float,
+    precision: int,
 ):
     """
     Monta uma lista de arestas a partir de uma lista de atributos, uma de dicionários, uma de restrições, uma lógica para montar arestas e um limiar
@@ -386,7 +372,7 @@ def calculate_frequency_keys(graph: ig.Graph, attribute: str) -> dict:
     return processed_dict
 
 
-def build_table(data: list, name: str, type: str) -> None:
+def build_table(data: dict, name: str, type: str) -> None:
     """
     Recebe os dados em uma lista, o nome que o arquivo de saída terá e se o dados se referem
     às medidas de centralidade ("centrality") ou frequência ("frequency")
@@ -399,7 +385,7 @@ def build_table(data: list, name: str, type: str) -> None:
     ax.axis("off")
     ax.axis("tight")
 
-    columns = data
+    columns = list(data.keys())
     df = DataFrame(columns, columns=columns)
     print(columns)
     print(df.head())
@@ -730,9 +716,7 @@ def generate_graph_neighbors_dict(
                 )  # atributos usados serão todos menos os que compõem o id
 
     if numeric_restrictions is not None:
-        restrictions = []
-        for num_rest in numeric_restrictions:
-            restrictions.append(keys[num_rest - 1])
+        restrictions = [keys[num_rest - 1] for num_rest in numeric_restrictions]
     else:
         restrictions = numeric_restrictions
 
@@ -895,13 +879,11 @@ def generate_graph_neighbors_dict(
 
             # se for escolhido para não tomar medidas custosas
             if big_graph_option == 3 or big_graph_option == 4:
-                new_measure_list = []  # esvazia lista de medidas
-
-                for measure in measures:
-                    if measure not in costly_measures:
-                        new_measure_list.append(
-                            measure
-                        )  # filtra medidas custosas da lista de medidas
+                new_measure_list = (
+                    [measure for measure in measures if measure not in costly_measures]
+                    if measures is not None
+                    else []
+                )
 
         # salva informações que irão compor os nomes dos arquivos de saída
         data_name = build_name(threshold, numeric_attribs, network_name)
