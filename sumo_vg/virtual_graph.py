@@ -352,7 +352,7 @@ def calculate_frequency_keys(graph: ig.Graph, attribute: str) -> dict:
     Input: graph representing network composed of nodes that are dictionaries
     Output: dictionary with the frequency that the specified key appears in the graph
     """
-    list_keys = [v[attribute] for v in graph.vs]
+    list_keys = [v[attribute] for v in graph.vs] #type: ignore
 
     dict_freq_keys = dict(Counter(key for key in list_keys))
 
@@ -511,7 +511,7 @@ def has_min_degree(graph: ig.Graph, min_d: float) -> bool:
     """
     Determina se o grafo possui algum vértice com grau mínimo passado
     """
-    return any(v.degree() < min_d for v in graph.vs)
+    return any(v.degree() < min_d for v in graph.vs) #type: ignore
 
 
 def calc_max_step(dicts: list, keys: list) -> int:
@@ -585,7 +585,7 @@ def build_neighbors(
     neighbors = dict()
     step_name = list(filter(lambda x: x == "Step" or x == "step", keys))[0]
 
-    list_attributes = [v[attribute_name] for v in graph.vs]
+    list_attributes = [v[attribute_name] for v in graph.vs] #type: ignore
 
     unique_attributes_list = list(set(attribute for attribute in list_attributes))
 
