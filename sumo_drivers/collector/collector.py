@@ -19,7 +19,9 @@ class DefaultCollector:
         reference to the other params aggregated.
     """
 
-    def __init__(self, aggregation_interval: int, path: Path, params: list[str]) -> None:
+    def __init__(
+        self, aggregation_interval: int, path: Path, params: list[str]
+    ) -> None:
         self._start_time = datetime.now()
         self._aggregation_interval = aggregation_interval
         self._path = path
@@ -30,7 +32,9 @@ class DefaultCollector:
         self._name_addon = ""
         self._aggr_junction_df = self._empty_df
         self._junction_params_remove = [params[1], params[3]]
-        self._junction_params = list(filter(lambda param: param not in self._junction_params_remove, params)) # removes Link and Junction Type
+        self._junction_params = list(
+            filter(lambda param: param not in self._junction_params_remove, params)
+        )  # removes Link and Junction Type
 
     def append(self, data_dict: dict[str, list[int]]) -> None:
         """Method the appends data present in the dictionary to the collector dataframe.
@@ -40,33 +44,43 @@ class DefaultCollector:
             data_dict (dict[str, list[int]]): data to append to the collector.
         """
         collector_data = {key: data_dict[key] for key in self._params[1:]}
-        self._collector_df = pd.concat([self._collector_df, pd.DataFrame(collector_data)], ignore_index=True)
+        self._collector_df = pd.concat(
+            [self._collector_df, pd.DataFrame(collector_data)], ignore_index=True
+        )
         curr_value = data_dict[self._params[0]][0]
         if self._should_aggregate(curr_value):
             self._aggregate(curr_value)
 
     def save(self) -> None:
-        """Method that saves the data stored to csv file.
-        """
+        """Method that saves the data stored to csv file."""
         self._path.mkdir(exist_ok=True, parents=True)
-        signature = Path(f"sim_{self._start_time.strftime('%H-%M-%S')}_{self._random.randint(0, 1000):03}.csv")
-        csv_filename = self._path / signature
-        self._aggr_df.to_csv(str(csv_filename), index=False)  # compression="xz"
+
+        self._aggr_df.to_csv(self.path_name, index=False)  # compression="xz"
 
     def save_aggr_junction(self) -> None:
-        """Method that aggregates data by junction and saves it to csv
-        """
+        """Method that aggregates data by junction and saves it to csv"""
         junction_data_path = Path(self._path / "junction_data")
         junction_data_path.mkdir(exist_ok=True, parents=True)
-        signature = Path(f"sim_junction_{self._start_time.strftime('%H-%M-%S')}_{self._random.randint(0, 1000):03}.csv")
+        signature = Path(
+            f"sim_junction_{self._start_time.strftime('%H-%M-%S')}_{self._random.randint(0, 1000):03}.csv"
+        )
         csv_filename = junction_data_path / signature
 
-        self._aggr_junction_df.to_csv(str(csv_filename), index=False)  # compression="xz"
+        self._aggr_junction_df.to_csv(
+            str(csv_filename), index=False
+        )  # compression="xz"
 
+    @property
+    def path_name(self):
+        signature = Path(
+            f"sim_{self._start_time.strftime('%H-%M-%S')}_{self._random.randint(0, 1000):03}.csv"
+        )
+        csv_filename = self._path / signature
+
+        return str(csv_filename)
 
     def reset(self) -> None:
-        """Method that resets the collector data to make a new run.
-        """
+        """Method that resets the collector data to make a new run."""
         self._collector_df = self._empty_df[self._params[1:]]
         self._aggr_df = self._empty_df
         self._start_time = datetime.now()
@@ -80,18 +94,22 @@ class DefaultCollector:
         """
         return self._params
 
-    def filter_by_junction_type(self, dataframe: pd.DataFrame, junction_type: str) -> pd.DataFrame:
+    def filter_by_junction_type(
+        self, dataframe: pd.DataFrame, junction_type: str
+    ) -> pd.DataFrame:
         """Method that filters a dataframe by junction type
 
         Args:
             dataframe(pd.DataFrame): dataframe to be filtered
             junction_type(str): type of junction to be filtered
-        
+
         Return:
             pd.DataFrame: filtered dataframe
         """
-        
-        dataframe_mask = dataframe["Junction Type"].str.contains(junction_type) # checks if type contains the junction type name (there can be variations of the name that are the same type)
+
+        dataframe_mask = dataframe["Junction Type"].str.contains(
+            junction_type
+        )  # checks if type contains the junction type name (there can be variations of the name that are the same type)
         filtered_dataframe = dataframe[dataframe_mask]
 
         return filtered_dataframe
@@ -100,7 +118,7 @@ class DefaultCollector:
         """Method that aggregates the values of the dataframe by a column
 
         Args:
-            dataframe(pd.DataFrame): 
+            dataframe(pd.DataFrame):
             column(str): column to be used to aggregate
 
         Return:
@@ -108,9 +126,15 @@ class DefaultCollector:
         """
 
         not_to_aggregate = ["Step"]
-        to_be_aggregated = list(filter(lambda aggr_column: aggr_column not in not_to_aggregate, self._params))
-        
-        aggregated_dataframe = dataframe.groupby(column, as_index=False)[to_be_aggregated].mean()
+        to_be_aggregated = list(
+            filter(
+                lambda aggr_column: aggr_column not in not_to_aggregate, self._params
+            )
+        )
+
+        aggregated_dataframe = dataframe.groupby(column, as_index=False)[
+            to_be_aggregated
+        ].mean()
 
         return aggregated_dataframe
 
@@ -131,10 +155,15 @@ class DefaultCollector:
         Args:
             aggregated_df (pd.DataFrame): aggregated information to append to main df.
         """
-        self._aggr_df = pd.concat([self._aggr_df, aggregated_df[self._params]], ignore_index=True)
+        self._aggr_df = pd.concat(
+            [self._aggr_df, aggregated_df[self._params]], ignore_index=True
+        )
         self._collector_df = self._empty_df[self._params[1:]]
 
-        self._aggr_junction_df = pd.concat([self._aggr_junction_df, aggregated_junction_df[self._junction_params]], ignore_index=True)
+        self._aggr_junction_df = pd.concat(
+            [self._aggr_junction_df, aggregated_junction_df[self._junction_params]],
+            ignore_index=True,
+        )
         for param in self._junction_params_remove:
             self._aggr_junction_df[param] = np.nan
         self._aggr_junction_df.dropna(how="all", axis=1, inplace=True)
@@ -176,21 +205,37 @@ class TripCollector(DefaultCollector):
         date (datetime, optional): datetime object that stores the simulation begin time. Defaults to datetime.now().
     """
 
-    def __init__(self, network_name: str = "default",
-                 aggregation_interval: int = 100,
-                 custom_path: str | None = None,
-                 additional_folders: list[Path] | None = None,
-                 param_list: list[str] | None = None,
-                 date: datetime = datetime.now()) -> None:
+    def __init__(
+        self,
+        network_name: str = "default",
+        aggregation_interval: int = 100,
+        custom_path: str | None = None,
+        additional_folders: list[Path] | None = None,
+        param_list: list[str] | None = None,
+        date: datetime = datetime.now(),
+    ) -> None:
         if network_name == "default":
-            print("Warning: using 'default' as simulation name since the data collector wasn't informed.")
-            print("Results will be saved in a default folder and might not be distinguishable from other simulations")
+            print(
+                "Warning: using 'default' as simulation name since the data collector wasn't informed."
+            )
+            print(
+                "Results will be saved in a default folder and might not be distinguishable from other simulations"
+            )
 
         date_str: str = f"/{date.strftime('%m_%d_%y')}"
-        additional_paths = Path(*additional_folders) if additional_folders is not None else Path()
-        path = Path(f"{(custom_path or 'results')}/TripMovingAverage/{network_name}/{date_str}") / additional_paths
+        additional_paths = (
+            Path(*additional_folders) if additional_folders is not None else Path()
+        )
+        path = (
+            Path(
+                f"{(custom_path or 'results')}/TripMovingAverage/{network_name}/{date_str}"
+            )
+            / additional_paths
+        )
         param_list = param_list or []
-        params = param_list if "TravelTime" in param_list else ["TravelTime"] + param_list
+        params = (
+            param_list if "TravelTime" in param_list else ["TravelTime"] + param_list
+        )
         params = [item.replace("TravelTime", "Travel Time") for item in params]
         params = ["Step"] + params
         super().__init__(aggregation_interval, path, params)
@@ -243,12 +288,14 @@ class ObjectiveCollector:
     def append_rewards(self, reward_list: list[np.ndarray]) -> None:
         reward_arr = np.array(reward_list)
         n_obj = len(self.__objectives)
-        new_data = pd.DataFrame({obj: reward_arr[:, i] for obj, i in zip(self.__objectives, range(n_obj))})
+        new_data = pd.DataFrame(
+            {obj: reward_arr[:, i] for obj, i in zip(self.__objectives, range(n_obj))}
+        )
         self.__collector = pd.concat([self.__collector, new_data], ignore_index=True)
 
     def save(self):
         filename = Path(f"{self.__sim_path}/fit_data_{'_'.join(self.__objectives)}.csv")
-        self.__collector.to_csv(str(filename), index=False, mode='a')
+        self.__collector.to_csv(str(filename), index=False, mode="a")
 
     def __str__(self) -> str:
         return f"{self.__collector}"
@@ -259,35 +306,69 @@ class LinkCollector(DefaultCollector):
     This class basically modifies DefaultCollector to be able to group data by link.
     """
 
-    def __init__(self, network_name: str = "default",
-                 aggregation_interval: int = 100,
-                 custom_path: str | None = None,
-                 additional_folders: list[Path] | None = None,
-                 params: list[str] | None = None,
-                 date: datetime = datetime.now()) -> None:
+    def __init__(
+        self,
+        network_name: str = "default",
+        aggregation_interval: int = 100,
+        custom_path: str | None = None,
+        additional_folders: list[Path] | None = None,
+        params: list[str] | None = None,
+        date: datetime = datetime.now(),
+    ) -> None:
         if network_name == "default":
-            print("Warning: using 'default' as simulation name since the data collector wasn't informed.")
-            print("Results will be saved in a default folder and might not be distinguishable from other simulations")
+            print(
+                "Warning: using 'default' as simulation name since the data collector wasn't informed."
+            )
+            print(
+                "Results will be saved in a default folder and might not be distinguishable from other simulations"
+            )
 
-        additional_paths = Path(*additional_folders) if additional_folders is not None else Path()
-        path = Path(f"{(custom_path or 'results')}/LinkStepData/{network_name}") / additional_paths
+        additional_paths = (
+            Path(*additional_folders) if additional_folders is not None else Path()
+        )
+        path = (
+            Path(f"{(custom_path or 'results')}/LinkStepData/{network_name}")
+            / additional_paths
+        )
 
         own_params = list(params or ["Speed"])
         if "TravelTime" in own_params:
             own_params.remove("TravelTime")
             own_params.append("Speed")
 
-        own_params = ["Step", "Link", "Junction", "Junction Type", "Running Vehicles", "Occupancy", "Travel Time"] + own_params
+        own_params = [
+            "Step",
+            "Link",
+            "Junction",
+            "Junction Type",
+            "Running Vehicles",
+            "Occupancy",
+            "Travel Time",
+        ] + own_params
         super().__init__(aggregation_interval, path, own_params)
 
     def _aggregate(self, curr_value: int) -> None:
-        aggregated_df = self._collector_df.groupby(by=self._params[1]).agg('mean', numeric_only=True).reset_index()
-        aggregated_df[self._params[0]] = curr_value # adding step
-        aggregated_df[self._params[2]] = self._collector_df[self._params[2]] # adding junction
-        aggregated_df[self._params[3]] = self._collector_df[self._params[3]] # adding junction type
+        aggregated_df = (
+            self._collector_df.groupby(by=self._params[1])
+            .agg("mean", numeric_only=True)
+            .reset_index()
+        )
+        aggregated_df[self._params[0]] = curr_value  # adding step
+        aggregated_df[self._params[2]] = self._collector_df[
+            self._params[2]
+        ]  # adding junction
+        aggregated_df[self._params[3]] = self._collector_df[
+            self._params[3]
+        ]  # adding junction type
 
-        aggregated_junction_df = self.filter_by_junction_type(aggregated_df, "traffic_light") # traffic_light, priority, make this a parameter
-        aggregated_junction_df = aggregated_junction_df.groupby(by=self._params[2]).agg('mean', numeric_only=True).reset_index() # aggregates by junction
-        aggregated_junction_df[self._params[0]] = curr_value # adding step
+        aggregated_junction_df = self.filter_by_junction_type(
+            aggregated_df, "traffic_light"
+        )  # traffic_light, priority, make this a parameter
+        aggregated_junction_df = (
+            aggregated_junction_df.groupby(by=self._params[2])
+            .agg("mean", numeric_only=True)
+            .reset_index()
+        )  # aggregates by junction
+        aggregated_junction_df[self._params[0]] = curr_value  # adding step
 
         self._update_main_dfs(aggregated_df, aggregated_junction_df)

@@ -27,18 +27,22 @@ class Vehicle:
         wrong_destination_penalty (int): penalty to subtract to reward if vehicle arrives at wrong destination
         environment (SumoEnvironment): objet of the environment the vehicle is within
     """
+
     _normalizer: scaler | None = None
 
-    def __init__(self, vehicle_id: str,
-                 origin: str,
-                 destination: str,
-                 arrival_bonus: int,
-                 wrong_destination_penalty: int,
-                 original_route: list[str],
-                 environment: SumoEnvironment,
-                 objectives: Objectives,
-                 min_toll_speed: float,
-                 toll_penalty: int) -> None:
+    def __init__(
+        self,
+        vehicle_id: str,
+        origin: str,
+        destination: str,
+        arrival_bonus: int,
+        wrong_destination_penalty: int,
+        original_route: list[str],
+        environment: SumoEnvironment,
+        objectives: Objectives,
+        min_toll_speed: float,
+        toll_penalty: int,
+    ) -> None:
         self.__id = vehicle_id
         self.__origin = origin
         self.__destination = destination
@@ -55,11 +59,15 @@ class Vehicle:
         self.__last_link_departure_time = -1.0
         self.__travel_time_last_link = -1.0
         self.__route = list([self.__origin])
-        self.__emission = defaultdict(lambda: 0.)
-        self.__lst_em_rewards = defaultdict(lambda: 0.)
-        self.__cumulative_em = defaultdict(lambda: 0.)
+        self.__emission = defaultdict(lambda: 0.0)
+        self.__lst_em_rewards = defaultdict(lambda: 0.0)
+        self.__cumulative_em = defaultdict(lambda: 0.0)
         self.__objectives = objectives
-        self.__link_inclusion = [tc.VAR_ROAD_ID] if tc.VAR_ROAD_ID not in self.__objectives.known_objectives else []
+        self.__link_inclusion = (
+            [tc.VAR_ROAD_ID]
+            if tc.VAR_ROAD_ID not in self.__objectives.known_objectives
+            else []
+        )
         self.__color = None
         self.__toll_speed = min_toll_speed
         self.__toll_penalty = toll_penalty
@@ -86,8 +94,9 @@ class Vehicle:
         self.__travel_time_last_link = -1.0
         self.__route = list([self.__origin])
         self.__emission = defaultdict(lambda: 0)
-        self.__lst_em_rewards = defaultdict(lambda: 0.)
-        self.__cumulative_em = defaultdict(lambda: 0.)
+        self.__lst_em_rewards = defaultdict(lambda: 0.0)
+        self.__cumulative_em = defaultdict(lambda: 0.0)
+        self.__curr_waiting_time = 0
 
     @property
     def vehicle_id(self) -> str:
@@ -185,7 +194,9 @@ class Vehicle:
         """
         return self.__last_link
 
-    def compute_reward(self, use_bonus_or_penalty: bool = True, normalize: bool = False) -> np.ndarray:
+    def compute_reward(
+        self, use_bonus_or_penalty: bool = True, normalize: bool = False
+    ) -> np.ndarray:
         """Method that computes the reward the agent should receive based on its last action.
         The reward is based on the vehicle's last travel time plus a bonus (if the destination is the vehicle's expected
         destination) or minus a penalty (if the vehicle reaches a destination node that isn't its expected destination)
@@ -206,22 +217,28 @@ class Vehicle:
         if not self.departed:
             raise RuntimeError(f"Vehicle {self.__id}  hasn't departed yet!")
         if self.__objectives.is_valid(tc.VAR_ROAD_ID):
-            reward.append(- self.__travel_time_last_link)
+            reward.append(-self.__travel_time_last_link)
 
         for key in self.__emission:
             if self.__objectives.is_valid(key):
                 em_sum = self.__lst_em_rewards[key]
-                reward.append(- em_sum)
+                reward.append(-em_sum)
         if use_bonus_or_penalty:
             if self.reached_destination:
                 if self.__route[-1] != self.__destination:
                     bonus_or_penalty = self.__wrong_destination_penalty
                 else:
                     bonus_or_penalty = self.__arrival_bonus
-            if self.__objectives.has_emissions and self.__above_toll_speed(self.__env.get_link_speed(self.__last_link)):
+            if self.__objectives.has_emissions and self.__above_toll_speed(
+                self.__env.get_link_speed(self.__last_link)
+            ):
                 toll_value = self.__toll_penalty
 
-        norm_reward = self.normalizer.transform([np.array(reward)])[0] if normalize else np.array(reward)
+        norm_reward = (
+            self.normalizer.transform([np.array(reward)])[0]
+            if normalize
+            else np.array(reward)
+        )
         reward = (lambda val: val + bonus_or_penalty)(norm_reward)
         reward[1:] = (lambda val: val - toll_value)(reward[1:])
         return reward
@@ -239,7 +256,9 @@ class Vehicle:
         cls = type(self)
         if cls._normalizer is None:
             path = self.__env.sim_path
-            fit_file = f"{path}/fit_data_{'_'.join(self.__objectives.objectives_str_list)}.csv"
+            fit_file = (
+                f"{path}/fit_data_{'_'.join(self.__objectives.objectives_str_list)}.csv"
+            )
             try:
                 fit_data = pd.read_csv(fit_file).to_numpy()
                 cls._normalizer = scaler().fit(fit_data)
@@ -262,7 +281,9 @@ class Vehicle:
             return False
 
         destination_node = self.__env.get_link_destination(self.__current_link)
-        return destination_node != self.__destination and not self.__env.is_border_node(destination_node)
+        return destination_node != self.__destination and not self.__env.is_border_node(
+            destination_node
+        )
 
     @property
     def correct_destiny(self) -> bool:
@@ -284,7 +305,9 @@ class Vehicle:
         try:
             traci.vehicle.add(self.vehicle_id, route_id)
         except TraCIException:
-            print(f"Warning: tried to insert vehicle {self.vehicle_id} to a non existent route. Please verify.")
+            print(
+                f"Warning: tried to insert vehicle {self.vehicle_id} to a non existent route. Please verify."
+            )
             traci.route.add(route_id, self.original_route)
             traci.vehicle.add(self.vehicle_id, route_id)
             inserted = False
@@ -324,9 +347,14 @@ class Vehicle:
         """
         traci_vehicle_info = traci.vehicle.getSubscriptionResults(self.vehicle_id)
         self.__last_link = self.current_link
-        if (current_link := traci_vehicle_info.pop(tc.VAR_ROAD_ID, self.current_link)) != self.current_link:
+        self.__curr_waiting_time = traci_vehicle_info.pop(tc.VAR_WAITING_TIME, 0)
+        if (
+            current_link := traci_vehicle_info.pop(tc.VAR_ROAD_ID, self.current_link)
+        ) != self.current_link:
             if self.__env.is_link(current_link):
-                self.__last_link = self.__update_current_link(current_link, current_time)
+                self.__last_link = self.__update_current_link(
+                    current_link, current_time
+                )
                 self.__just_changed = True
         self.__update_emission(traci_vehicle_info)
 
@@ -337,7 +365,7 @@ class Vehicle:
         Returns:
             bool: boolean that indicates if the vehicle has changed to a new link
         """
-        if (changed := self.__just_changed):
+        if changed := self.__just_changed:
             self.__just_changed = False
         return changed
 
@@ -347,8 +375,17 @@ class Vehicle:
         Args:
             current_time (int): current simulation step
         """
-        self.__update_current_link(traci.vehicle.getRoadID(self.vehicle_id), current_time)
-        traci.vehicle.subscribe(self.vehicle_id, self.__link_inclusion + self.__objectives.known_objectives)
+        self.__update_current_link(
+            traci.vehicle.getRoadID(self.vehicle_id), current_time
+        )
+        traci.vehicle.subscribe(
+            self.vehicle_id,
+            [
+                *self.__link_inclusion,
+                *self.__objectives.known_objectives,
+                tc.VAR_WAITING_TIME,
+            ],
+        )
         if self.__color is None:
             self.__color = traci.vehicle.getColor(self.vehicle_id)
 
@@ -440,7 +477,9 @@ class Vehicle:
         """
         if not self.departed:
             if current_time < self.__load_time:
-                raise RuntimeError("Invalid departure time: value lower than load time!")
+                raise RuntimeError(
+                    "Invalid departure time: value lower than load time!"
+                )
             self.__departure_time = current_time
         else:
             self.__compute_last_link_travel_time(current_time)
@@ -461,7 +500,7 @@ class Vehicle:
             for key in self.__emission:
                 self.__cumulative_em[key] += self.__emission[key]
                 self.__lst_em_rewards[key] = self.__emission[key]
-            self.__emission = defaultdict(lambda: 0.)
+            self.__emission = defaultdict(lambda: 0.0)
         for key, value in consumption_data.items():
             self.__emission[key] += value
 
@@ -475,8 +514,7 @@ class Vehicle:
         self.__travel_time_last_link = current_time - self.__last_link_departure_time
 
     def __append_destination_node(self) -> None:
-        """Method that appends the destination node of the vehicle's current link to its route.
-        """
+        """Method that appends the destination node of the vehicle's current link to its route."""
         if self.__current_link is not None:
             destination_node = self.__env.get_link_destination(self.__current_link)
             self.__route.append(destination_node)
@@ -484,10 +522,25 @@ class Vehicle:
     def __above_toll_speed(self, speed: float) -> bool:
         return self.__toll_speed > 0 and speed > self.__toll_speed
 
+    @property
+    def step_data(self) -> dict[str, float] | None:
+        if self.__travel_time_last_link == -1:
+            return None
+
+        return {
+            "Travel time": float(self.__travel_time_last_link),
+            "Waiting time": self.__curr_waiting_time,
+            **{
+                key: self.__lst_em_rewards[key]
+                for key in self.__emission
+                if self.__objectives.is_valid(key)
+            },
+        }
+
 
 class Objectives:
-    """Class that holds objective params for Multi-objective learning
-    """
+    """Class that holds objective params for Multi-objective learning"""
+
     __emissions: dict[str, int] = {
         "CO": tc.VAR_COEMISSION,
         "CO2": tc.VAR_CO2EMISSION,
@@ -498,7 +551,7 @@ class Objectives:
     __conversions: dict[str, int] = {
         "TravelTime": tc.VAR_ROAD_ID,
         **__emissions,
-        "Fuel": tc.VAR_FUELCONSUMPTION
+        "Fuel": tc.VAR_FUELCONSUMPTION,
     }
 
     def __init__(self, params) -> None:
@@ -520,7 +573,11 @@ class Objectives:
         Returns:
             list[str]: list containing all objective strings.
         """
-        return [string for string, value in self.__conversions.items() if value in self.known_objectives]
+        return [
+            string
+            for string, value in self.__conversions.items()
+            if value in self.known_objectives
+        ]
 
     def is_valid(self, objective: int) -> bool:
         """Method that returns a boolean that indicates if a given param is a valid objective
@@ -541,7 +598,11 @@ class Objectives:
         Returns:
             bool: boolean indicating True if any emission gas in in the current objectives and False otherwise.
         """
-        return any(obj for obj in self.known_objectives if obj in type(self).__emissions.values())
+        return any(
+            obj
+            for obj in self.known_objectives
+            if obj in type(self).__emissions.values()
+        )
 
     @classmethod
     def __retrieve_objectives(cls, params: list[str]) -> list[int]:
