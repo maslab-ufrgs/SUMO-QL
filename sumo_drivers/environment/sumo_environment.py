@@ -860,7 +860,8 @@ class SumoEnvironment(MultiAgentEnv):
         for od in self.__od_pairs:
             self.__od_pairs[od].update_vehicle_data(
                 [
-                    self.__vehicles[vehicle]
-                    for vehicle in [*running_vehicles, *arrived_vehicles]
+                    self.__vehicles[vehicle_id]
+                    for vehicle_id in [*running_vehicles, *arrived_vehicles]
+                    if self.__vehicles[vehicle_id].od_pair == od
                 ]
             )
