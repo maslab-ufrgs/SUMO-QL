@@ -270,6 +270,13 @@ class GraphConfig(EmptyConfig):
         ),
     )
 
+    od_graph: bool = field(
+        default=False,
+        metadata=describe(
+            "Flag that indicates if graph used is from od pairs", group=main_group()
+        ),
+    )
+
     @property
     def name(self) -> str:
         return "graph"

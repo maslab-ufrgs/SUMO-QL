@@ -364,7 +364,8 @@ def run_sim(
         """
         comm_dev = env.get_comm_dev(state)
         if comm_dev.communication_success:
-            expected_rewards = comm_dev.get_outgoing_links_expected_rewards()
+            od_pair = env.get_vehicle_od_pair(vehicle_id)
+            expected_rewards = comm_dev.get_outgoing_links_expected_rewards(od_pair)
             for link, expected_reward in expected_rewards.items():
                 origin = env.get_link_origin(link)
                 destination = env.get_link_destination(link)

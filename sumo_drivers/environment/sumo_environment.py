@@ -63,6 +63,7 @@ class EnvConfig:
     toll_penalty: int
     graph_neighbors: dict
     collect_od: bool
+    od_graph: bool
 
     @classmethod
     def from_sim_config(
@@ -92,6 +93,7 @@ class EnvConfig:
                     toll_penalty=0,
                     graph_neighbors=dict(),
                     collect_od=config.collect_od_data,
+                    od_graph=False,
                 )
             case QLConfig(_):
                 print(f"Optimizing: {config.objective}")
@@ -113,6 +115,9 @@ class EnvConfig:
                     toll_penalty=config.toll_value,
                     graph_neighbors=dict(),
                     collect_od=config.collect_od_data,
+                    od_graph=config.virtual_graph.od_graph
+                    if config.virtual_graph is not None
+                    else False,
                 )
             case PQLConfig(_):
                 print(f"Optimizing: {config.objectives}")
@@ -134,6 +139,9 @@ class EnvConfig:
                     toll_penalty=config.toll_value,
                     graph_neighbors=dict(),
                     collect_od=config.collect_od_data,
+                    od_graph=config.virtual_graph.od_graph
+                    if config.virtual_graph is not None
+                    else False,
                 )
 
 
@@ -209,6 +217,7 @@ class SumoEnvironment(MultiAgentEnv):
                 config.max_comm_dev_queue_size,
                 config.communication_success_rate,
                 self,
+                self.__config.od_graph,
             )
             self.__action_space[node.getID()] = spaces.Discrete(len(node.getOutgoing()))
 
@@ -629,7 +638,9 @@ class SumoEnvironment(MultiAgentEnv):
             self.__observations[vehicle_id]["ready_to_act"] = False
             self.__vehicles[vehicle_id].update_route(action)
 
-    def __update_comm_dev_info(self, link_id: str, reward: np.ndarray) -> None:
+    def __update_comm_dev_info(
+        self, od_pair: str, link_id: str, reward: np.ndarray
+    ) -> None:
         """Method that receives a reward and a link id to update the information to the destination node CommDev about
         it.
 
@@ -640,7 +651,7 @@ class SumoEnvironment(MultiAgentEnv):
         node_id = self.get_link_destination(link_id)
         if self.__comm_dev[node_id].communication_success:
             # print(f"Reward {reward} added to {node_id}")
-            self.__comm_dev[node_id].update_stored_rewards(link_id, reward)
+            self.__comm_dev[node_id].update_stored_rewards(od_pair, link_id, reward)
 
     def __handle_loaded_vehicles(self) -> None:
         """Method that updates information necessary in the observation for all the vehicles loaded in the simulation
@@ -673,13 +684,16 @@ class SumoEnvironment(MultiAgentEnv):
             self.__vehicles[vehicle_id].update_data(self.__current_step)
             if self.__vehicles[vehicle_id].changed_link:
                 vehicle_last_link = self.__vehicles[vehicle_id].last_link
+                od_pair = self.__vehicles[vehicle_id].od_pair
                 should_normalize = self.__not_collecting and self.__normalize_rewards
                 rewards[vehicle_id] = self.__vehicles[vehicle_id].compute_reward(
                     normalize=should_normalize
                 )
                 self.__update_data_fit(rewards[vehicle_id])
 
-                self.__update_comm_dev_info(vehicle_last_link, rewards[vehicle_id])
+                self.__update_comm_dev_info(
+                    od_pair, vehicle_last_link, rewards[vehicle_id]
+                )
 
                 self.__retrieve_observation_states(vehicle_id)
                 self.__observations[vehicle_id][
@@ -695,6 +709,9 @@ class SumoEnvironment(MultiAgentEnv):
                     self.__observations[vehicle_id]["available_actions"] = []
 
         return rewards
+
+    def get_vehicle_od_pair(self, vehicle_id: str) -> str:
+        return self.__vehicles[vehicle_id].od_pair
 
     def __handle_arrived_vehicles(
         self, arrived_vehicles: list[str]
@@ -726,7 +743,9 @@ class SumoEnvironment(MultiAgentEnv):
                 use_bonus_or_penalty=False, normalize=should_normalize
             )
             self.__update_comm_dev_info(
-                self.__vehicles[vehicle_id].current_link, reward
+                self.__vehicles[vehicle_id].od_pair,
+                self.__vehicles[vehicle_id].current_link,
+                reward,
             )
             reward = self.__vehicles[vehicle_id].compute_reward(
                 use_bonus_or_penalty=False
