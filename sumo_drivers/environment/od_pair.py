@@ -22,17 +22,23 @@ class ODPair:
         "Load": pl.Int64,
     }
 
-    def __init__(self, straight_distance: float) -> None:
+    def __init__(self, straight_distance: float, collect: bool) -> None:
         self.__straight_distance: float = straight_distance
         self.__min_load: int = -1
         self.__current_load: list[str] = []
         self.__vehicles_within: list[str] = []
-        self.__vehicles_step_data: pl.DataFrame = pl.DataFrame(
-            {"Travel time": [], "Waiting time": []},
-            schema={"Travel time": pl.Float64, "Waiting time": pl.Float64},
+        self.__vehicles_step_data: pl.DataFrame | None = (
+            pl.DataFrame(
+                {"Travel time": [], "Waiting time": []},
+                schema={"Travel time": pl.Float64, "Waiting time": pl.Float64},
+            )
+            if collect
+            else None
         )
-        self.__step_od_data: pl.DataFrame = pl.DataFrame(
-            {param: [] for param in self.PARAMS}, schema=self.SCHEMAS
+        self.__step_od_data: pl.DataFrame | None = (
+            pl.DataFrame({param: [] for param in self.PARAMS}, schema=self.SCHEMAS)
+            if collect
+            else None
         )
 
         rd.seed(datetime.now().timestamp())
@@ -84,6 +90,8 @@ class ODPair:
         return self.__straight_distance
 
     def update_vehicle_data(self, vehicles: list[Vehicle]):
+        if self.__vehicles_step_data is None:
+            return
         vehicles_data = [
             pl.DataFrame(
                 {
@@ -99,8 +107,12 @@ class ODPair:
         )
 
     def summarize_step(self, current_step):
+        if self.__vehicles_step_data is None or self.__step_od_data is None:
+            return
+
         if self.__vehicles_step_data.shape[0] == 0:
             return
+
         vehicles_mean = self.__vehicles_step_data.mean()
         self.__step_od_data = pl.concat(
             [
@@ -145,4 +157,7 @@ class ODPair:
         )
 
     def summarize_all(self, window_size: int) -> pl.DataFrame:
+        if self.__step_od_data is None:
+            return pl.DataFrame()
+
         return self.__step_od_data[::window_size]

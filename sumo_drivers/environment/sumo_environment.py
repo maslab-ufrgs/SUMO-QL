@@ -62,6 +62,7 @@ class EnvConfig:
     min_toll_speed: float
     toll_penalty: int
     graph_neighbors: dict
+    collect_od: bool
 
     @classmethod
     def from_sim_config(
@@ -90,6 +91,7 @@ class EnvConfig:
                     min_toll_speed=np.infty,
                     toll_penalty=0,
                     graph_neighbors=dict(),
+                    collect_od=config.collect_od_data,
                 )
             case QLConfig(_):
                 print(f"Optimizing: {config.objective}")
@@ -110,6 +112,7 @@ class EnvConfig:
                     min_toll_speed=config.toll_speed,
                     toll_penalty=config.toll_value,
                     graph_neighbors=dict(),
+                    collect_od=config.collect_od_data,
                 )
             case PQLConfig(_):
                 print(f"Optimizing: {config.objectives}")
@@ -130,6 +133,7 @@ class EnvConfig:
                     min_toll_speed=config.toll_speed,
                     toll_penalty=config.toll_value,
                     graph_neighbors=dict(),
+                    collect_od=config.collect_od_data,
                 )
 
 
@@ -180,6 +184,7 @@ class SumoEnvironment(MultiAgentEnv):
         self.__objectives: Objectives = Objectives(config.objectives)
         self.__data_fit = None
         self.__normalize_rewards = config.normalize_rewards
+        self.__config = config
 
         network_filepath = Path(self.__sumocfg_file[: self.__sumocfg_file.rfind("/")])
         if config.fit_data_collect:
@@ -272,18 +277,19 @@ class SumoEnvironment(MultiAgentEnv):
         self.__link_collector.save_aggr_junction()
         if self.__data_fit is not None:
             self.__data_fit.save()
-        od_dfs: list[pl.DataFrame] = []
-        for od in self.__od_pairs:
-            df = self.__od_pairs[od].summarize_all(100)
-            df = df.with_columns(pl.lit(od).alias("OD"))
-            od_dfs.append(df)
+        if self.__config.collect_od:
+            od_dfs: list[pl.DataFrame] = []
+            for od in self.__od_pairs:
+                df = self.__od_pairs[od].summarize_all(100)
+                df = df.with_columns(pl.lit(od).alias("OD"))
+                od_dfs.append(df)
 
-        od_data = pl.concat(od_dfs)
-        od_data = od_data.sort(by="Step")
-        link_csv_name = Path(self.__link_collector.path_name)
-        od_data.to_pandas().to_csv(
-            link_csv_name.with_name(f"{link_csv_name.stem}_ODs.csv"), index=False
-        )
+            od_data = pl.concat(od_dfs)
+            od_data = od_data.sort(by="Step")
+            link_csv_name = Path(self.__link_collector.path_name)
+            od_data.to_pandas().to_csv(
+                link_csv_name.with_name(f"{link_csv_name.stem}_ODs.csv"), index=False
+            )
 
         traci.close()
 
@@ -502,7 +508,8 @@ class SumoEnvironment(MultiAgentEnv):
                     self.__network.getNode(destination_id).getCoord()
                 )
                 od_pairs_dict[od_pair] = ODPair(
-                    float(np.linalg.norm(origin_pos - destination_pos))
+                    float(np.linalg.norm(origin_pos - destination_pos)),
+                    self.__config.collect_od,
                 )
                 total_distance += od_pairs_dict[od_pair].straight_distance
 
