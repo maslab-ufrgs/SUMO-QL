@@ -41,11 +41,12 @@ def run_sim(
     observations = None
     rewards = None
     env: SumoEnvironment
+    vg_neighbors: dict
 
     if isinstance(config, NonLearnerConfig) or config.virtual_graph is None:
         uses_virtual_graph = False
         print("Not using virtual graph")
-        vg_neighbors_dict = {}
+        vg_neighbors = {}
     else:
         print("Using virtual graph")
         uses_virtual_graph = True
@@ -53,12 +54,12 @@ def run_sim(
             # reads pickle file containing virtual graph neighbors dictionary
             print("Reading graph neighbors dictionary from pickle file...")
             with open(f"{config.virtual_graph.vg_dict}", "rb") as vg_dict_pickle:
-                vg_neighbors_dict = pickle.load(vg_dict_pickle, encoding="bytes")
+                vg_neighbors = pickle.load(vg_dict_pickle, encoding="bytes")
         else:
             # generates graph neighbors dict
             print("Generating graph neighbors dictionary...")
             network_name = str(config.sumocfg).split("/")[-2]
-            vg_neighbors_dict = generate_graph_neighbors_dict(
+            vg_neighbors = generate_graph_neighbors_dict(
                 config.virtual_graph.file,
                 config.virtual_graph.attributes,
                 config.virtual_graph.labels,
@@ -166,7 +167,7 @@ def run_sim(
         )
 
     def create_environment(
-        config: NonLearnerConfig | QLConfig | PQLConfig, vg_neighbors_dict: dict
+        config: NonLearnerConfig | QLConfig | PQLConfig, vg_neighbors: dict
     ) -> SumoEnvironment:
         """Method that creates a SUMO environment given the arguments necessary to it.
 
@@ -206,7 +207,7 @@ def run_sim(
             observe_list=config.observe_list,
         )
 
-        env_config = EnvConfig.from_sim_config(config, data_collector)
+        env_config = EnvConfig.from_sim_config(config, data_collector, vg_neighbors)
         environment = SumoEnvironment(env_config)
         return environment
 
@@ -372,7 +373,7 @@ def run_sim(
                 handle_learning(vehicle_id, origin, destination, expected_reward)
 
     # Run the simulation
-    env = create_environment(config, vg_neighbors_dict)
+    env = create_environment(config, vg_neighbors)
     run(iteration)
 
 

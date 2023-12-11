@@ -32,11 +32,18 @@ def is_num(num_str: str) -> bool:
         return False
 
 
-def should_include_line(row: dict[str, str], keys: list, link_as_vertex: bool) -> bool:
+def should_include_line(
+    row: dict[str, str], keys: list, link_as_vertex: bool, od_graph: bool
+) -> bool:
     """>
     Checks if line should be considered or discarded. This line will become a vertex of the virtual graph.
     Doesn't include line containing empty attribute, zero occupancy or border links (if graph will be composed of links).
     """
+    if od_graph:
+        if any(row[key] == "" for key in keys):
+            return False
+        return True
+
     # Checks if link is border link (only makes sense in grid network)
     is_border_link: Callable[[str], bool] = (
         lambda link: "top" in link
@@ -73,12 +80,13 @@ def csv_import(
 
         attribute_name = keys[first_id - 1]
         link_as_vertex = attribute_name == "Link"
+        od_graph = attribute_name == "OD"
 
         lines = []
         id = 0  # identificador usado para criar arestas
         line_no = 2
         for line in reading:
-            if should_include_line(line, keys, link_as_vertex):
+            if should_include_line(line, keys, link_as_vertex, od_graph):
                 lines.append(
                     line
                 )  # grava cada linha (um dicionário próprio) em uma lista de linhas
@@ -352,7 +360,7 @@ def calculate_frequency_keys(graph: ig.Graph, attribute: str) -> dict:
     Input: graph representing network composed of nodes that are dictionaries
     Output: dictionary with the frequency that the specified key appears in the graph
     """
-    list_keys = [v[attribute] for v in graph.vs] #type: ignore
+    list_keys = [v[attribute] for v in graph.vs]  # type: ignore
 
     dict_freq_keys = dict(Counter(key for key in list_keys))
 
@@ -511,7 +519,7 @@ def has_min_degree(graph: ig.Graph, min_d: float) -> bool:
     """
     Determina se o grafo possui algum vértice com grau mínimo passado
     """
-    return any(v.degree() < min_d for v in graph.vs) #type: ignore
+    return any(v.degree() < min_d for v in graph.vs)  # type: ignore
 
 
 def calc_max_step(dicts: list, keys: list) -> int:
@@ -585,7 +593,7 @@ def build_neighbors(
     neighbors = dict()
     step_name = list(filter(lambda x: x == "Step" or x == "step", keys))[0]
 
-    list_attributes = [v[attribute_name] for v in graph.vs] #type: ignore
+    list_attributes = [v[attribute_name] for v in graph.vs]  # type: ignore
 
     unique_attributes_list = list(set(attribute for attribute in list_attributes))
 

@@ -235,7 +235,7 @@ class Vehicle:
                 toll_value = self.__toll_penalty
 
         norm_reward = (
-            self.normalizer.transform([np.array(reward)])[0]
+            self.normalizer.transform([np.array(reward)])[0]  # type: ignore
             if normalize
             else np.array(reward)
         )

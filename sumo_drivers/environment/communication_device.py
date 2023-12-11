@@ -85,26 +85,29 @@ class CommunicationDevice:
         if link not in self.__data.keys():
             raise RuntimeError("Link is not connected to commDev's node")
 
-        if len(self.__data[link]) > 0:
-            data_mean = np.mean(
-                [
-                    reward
-                    for reward, od in self.__data[link]
-                    if self._are_neighbors(od_pair, od)
-                ],
+        link_data = [
+            reward
+            for reward, od in self.__data[link]
+            if self._are_neighbors(od_pair, od)
+        ]
+        if len(link_data) > 0:
+            data_mean: np.ndarray = np.mean(
+                link_data,
                 axis=0,
             )
-            if len(data_mean) == nobj:  # if the amount of data is correct
+            if data_mean.size == nobj:  # if the amount of data is correct
                 return data_mean
             else:
                 print(f"Size data mean doesn't match number of objectives for {link}")
-        else:
-            print(f"Empty link data list for {link}")
+        # else:
+        #     print(f"Empty link data list for {link}")
 
         return np.zeros(shape=nobj)
 
     def _are_neighbors(self, current_od: str, rw_od: str) -> bool:
         if not self.__od_graph:
+            return True
+        if current_od == rw_od:
             return True
 
         graph_neighbors = self.__environment.get_graph_neighbors()

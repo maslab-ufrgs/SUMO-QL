@@ -70,6 +70,7 @@ class EnvConfig:
         cls,
         config: NonLearnerConfig | QLConfig | PQLConfig,
         data_collector: LinkCollector,
+        vg_neighbors: dict,
     ) -> EnvConfig:
         if config.sumocfg is None:
             raise RuntimeError("Sumo cfg files should have a valid path!")
@@ -100,7 +101,7 @@ class EnvConfig:
                 return cls(
                     sumocfg_file=config.sumocfg,
                     simulation_steps=config.steps,
-                    steps_to_populate=config.steps,
+                    steps_to_populate=config.wait_learn,
                     max_vehicles=config.demand,
                     right_arrival_bonus=config.bonus,
                     wrong_arrival_penalty=config.penalty,
@@ -113,7 +114,7 @@ class EnvConfig:
                     normalize_rewards=config.normalize_rewards,
                     min_toll_speed=config.toll_speed,
                     toll_penalty=config.toll_value,
-                    graph_neighbors=dict(),
+                    graph_neighbors=vg_neighbors,
                     collect_od=config.collect_od_data,
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
@@ -124,7 +125,7 @@ class EnvConfig:
                 return cls(
                     sumocfg_file=config.sumocfg,
                     simulation_steps=config.steps,
-                    steps_to_populate=config.steps,
+                    steps_to_populate=config.wait_learn,
                     max_vehicles=config.demand,
                     right_arrival_bonus=config.bonus,
                     wrong_arrival_penalty=config.penalty,
@@ -137,7 +138,7 @@ class EnvConfig:
                     normalize_rewards=config.normalize_rewards,
                     min_toll_speed=config.toll_speed,
                     toll_penalty=config.toll_value,
-                    graph_neighbors=dict(),
+                    graph_neighbors=vg_neighbors,
                     collect_od=config.collect_od_data,
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
@@ -739,13 +740,13 @@ class SumoEnvironment(MultiAgentEnv):
 
             should_normalize = self.__not_collecting and self.__normalize_rewards
 
-            reward = self.__vehicles[vehicle_id].compute_reward(
+            commdev_rw = self.__vehicles[vehicle_id].compute_reward(
                 use_bonus_or_penalty=False, normalize=should_normalize
             )
             self.__update_comm_dev_info(
                 self.__vehicles[vehicle_id].od_pair,
                 self.__vehicles[vehicle_id].current_link,
-                reward,
+                commdev_rw,
             )
             reward = self.__vehicles[vehicle_id].compute_reward(
                 use_bonus_or_penalty=False
