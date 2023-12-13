@@ -29,6 +29,8 @@ class CommunicationDevice:
         comm_success_rate: float,
         environment: SumoEnvironment,
         od_graph: bool,
+        bonus: int,
+        penalty: int,
     ) -> None:
         self.__node = node
         self.__max_queue_size = max_queue_size
@@ -38,6 +40,8 @@ class CommunicationDevice:
             link.getID(): list() for link in node.getIncoming()
         }
         self.__od_graph: bool = od_graph
+        self._bonus = bonus
+        self._penalty = -penalty
 
         rd.seed(datetime.now().timestamp())
 
@@ -85,6 +89,11 @@ class CommunicationDevice:
         if link not in self.__data.keys():
             raise RuntimeError("Link is not connected to commDev's node")
 
+        incentive = 0
+        if self.__environment.get_link_destination_type(link) == "dead_end":
+            destiny = od_pair.split("|")[-1]
+            incentive += self._bonus if link.find(destiny) != -1 else self._penalty
+
         link_data = [
             reward
             for reward, od in self.__data[link]
@@ -95,14 +104,15 @@ class CommunicationDevice:
                 link_data,
                 axis=0,
             )
+
             if data_mean.size == nobj:  # if the amount of data is correct
-                return data_mean
+                return data_mean + incentive
             else:
                 print(f"Size data mean doesn't match number of objectives for {link}")
         # else:
         #     print(f"Empty link data list for {link}")
 
-        return np.zeros(shape=nobj)
+        return np.zeros(shape=nobj) + incentive
 
     def _are_neighbors(self, current_od: str, rw_od: str) -> bool:
         if not self.__od_graph:
@@ -142,7 +152,7 @@ class CommunicationDevice:
             Being that the keys are the links ID and the values are the expected rewards.
         """
         if not self.__od_graph:
-            return self._link_data_wo_od_graph()
+            return self._link_data_wo_od_graph(od_pair)
 
         return self._link_data_od_graph(od_pair)
 
@@ -162,16 +172,18 @@ class CommunicationDevice:
 
         return links_data
 
-    def _link_data_wo_od_graph(self) -> dict[str, np.ndarray]:
+    def _link_data_wo_od_graph(self, od_pair: str) -> dict[str, np.ndarray]:
         links_data = dict()
         for link in self.__node.getOutgoing():
-            link_id = link.getID()
+            link_id: str = link.getID()
 
             # gets data of neighboring commdev
             neighboring_comm_dev = self.__environment.get_comm_dev(
                 link.getToNode().getID()
             )
-            links_data[link_id] = neighboring_comm_dev.get_expected_reward("", link_id)
+            links_data[link_id] = neighboring_comm_dev.get_expected_reward(
+                od_pair, link_id
+            )
 
             # gets data of commdev of graph neighbor link
             graph_neighbors = self.__environment.get_graph_neighbors()
@@ -189,6 +201,6 @@ class CommunicationDevice:
 
                     links_data[
                         link_graph_neighbor
-                    ] = graph_comm_dev.get_expected_reward("", link_graph_neighbor)
+                    ] = graph_comm_dev.get_expected_reward(od_pair, link_graph_neighbor)
 
         return links_data

@@ -219,6 +219,8 @@ class SumoEnvironment(MultiAgentEnv):
                 config.communication_success_rate,
                 self,
                 self.__config.od_graph,
+                self.__config.right_arrival_bonus,
+                self.__config.wrong_arrival_penalty,
             )
             self.__action_space[node.getID()] = spaces.Discrete(len(node.getOutgoing()))
 
