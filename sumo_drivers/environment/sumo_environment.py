@@ -62,6 +62,7 @@ class EnvConfig:
     trip_collector: TripCollector
     use_gui: bool
     objectives: list[str]
+    observe_list: list[str]
     fit_data_collect: bool
     normalize_rewards: bool
     min_toll_speed: float
@@ -95,6 +96,7 @@ class EnvConfig:
                     trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=config.observe_list,
+                    observe_list=config.observe_list,
                     fit_data_collect=False,
                     normalize_rewards=False,
                     min_toll_speed=np.infty,
@@ -118,6 +120,7 @@ class EnvConfig:
                     trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=[config.objective],
+                    observe_list=config.observe_list,
                     fit_data_collect=config.collect_rewards,
                     normalize_rewards=config.normalize_rewards,
                     min_toll_speed=config.toll_speed,
@@ -143,6 +146,7 @@ class EnvConfig:
                     trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=config.objectives,
+                    observe_list=config.observe_list,
                     fit_data_collect=config.collect_rewards,
                     normalize_rewards=config.normalize_rewards,
                     min_toll_speed=config.toll_speed,
@@ -547,6 +551,7 @@ class SumoEnvironment(MultiAgentEnv):
                 route,
                 self,
                 self.__objectives,
+                self.__config.observe_list,
                 min_toll_speed,
                 toll_penalty,
             )

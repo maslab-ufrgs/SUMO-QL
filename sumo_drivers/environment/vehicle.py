@@ -40,6 +40,7 @@ class Vehicle:
         original_route: list[str],
         environment: SumoEnvironment,
         objectives: Objectives,
+        observe_list: list[str],
         min_toll_speed: float,
         toll_penalty: int,
     ) -> None:
@@ -63,6 +64,7 @@ class Vehicle:
         self.__lst_em_rewards = defaultdict(lambda: 0.0)
         self.__cumulative_em = defaultdict(lambda: 0.0)
         self.__objectives = objectives
+        self.__observe_list = Objectives(observe_list)
         self.__link_inclusion = (
             [tc.VAR_ROAD_ID]
             if tc.VAR_ROAD_ID not in self.__objectives.known_objectives
@@ -382,7 +384,7 @@ class Vehicle:
             self.vehicle_id,
             [
                 *self.__link_inclusion,
-                *self.__objectives.known_objectives,
+                *self.__observe_list.known_objectives,
                 tc.VAR_WAITING_TIME,
             ],
         )
@@ -530,11 +532,7 @@ class Vehicle:
         return {
             "Travel time": float(self.__travel_time_last_link),
             "Waiting time": self.__curr_waiting_time,
-            **{
-                key: self.__lst_em_rewards[key]
-                for key in self.__emission
-                if self.__objectives.is_valid(key)
-            },
+            **{key: self.__lst_em_rewards[key] for key in self.__emission},
         }
 
 
