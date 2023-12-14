@@ -107,8 +107,10 @@ class DefaultCollector:
         Args:
             curr_value (int): current value of the first parameter that is used as the x axis in the dataframe.
         """
-        aggregated_df = self._collector_df.mean().transpose()
-        aggregated_df[self._params[0]] = [curr_value]
+        aggregated_df = self._collector_df.mean()
+        aggregated_df = aggregated_df.with_columns(
+            pl.lit(curr_value).alias(self._params[0])
+        )
         self._update_main_dfs(aggregated_df)
 
     def _update_main_dfs(self, aggregated_df):
@@ -180,14 +182,11 @@ class TripCollector(DefaultCollector):
                 "Results will be saved in a default folder and might not be distinguishable from other simulations"
             )
 
-        date_str: str = f"/{date.strftime('%m_%d_%y')}"
         additional_paths = (
             Path(*additional_folders) if additional_folders is not None else Path()
         )
         path = (
-            Path(
-                f"{(custom_path or 'results')}/TripMovingAverage/{network_name}/{date_str}"
-            )
+            Path(f"{(custom_path or 'results')}/TripStepData/{network_name}")
             / additional_paths
         )
         param_list = param_list or []

@@ -11,7 +11,11 @@ import numpy as np
 from script_configs import create_parser
 from script_configs.configs import NonLearnerConfig, PQLConfig, QLConfig
 from sumo_drivers.agent.q_learning import PQLAgent, QLAgent
-from sumo_drivers.collector.collector import DefaultCollector, LinkCollector
+from sumo_drivers.collector.collector import (
+    DefaultCollector,
+    LinkCollector,
+    TripCollector,
+)
 from sumo_drivers.environment.sumo_environment import EnvConfig, SumoEnvironment
 from sumo_drivers.exploration.epsilon_greedy import EpsilonGreedy
 from sumo_vg.virtual_graph import generate_graph_neighbors_dict
@@ -113,7 +117,7 @@ def run_sim(
         agent_type: str,
         n_runs: int = 1,
         observe_list: list[str] | None = None,
-    ) -> LinkCollector:
+    ) -> tuple[LinkCollector, TripCollector]:
         """Method that generates a data collector based on the information used in the simulation.
 
         Args:
@@ -158,12 +162,21 @@ def run_sim(
             additional_folders.append(batch_folder)
             create_log(main_simulation_name, date)
 
-        return LinkCollector(
-            network_name=main_simulation_name,
-            aggregation_interval=moving_avg_gap,
-            additional_folders=additional_folders,
-            params=observe_list,
-            date=date,
+        return (
+            LinkCollector(
+                network_name=main_simulation_name,
+                aggregation_interval=moving_avg_gap,
+                additional_folders=additional_folders,
+                params=observe_list,
+                date=date,
+            ),
+            TripCollector(
+                network_name=main_simulation_name,
+                aggregation_interval=moving_avg_gap,
+                additional_folders=additional_folders,
+                param_list=observe_list,
+                date=date,
+            ),
         )
 
     def create_environment(
@@ -194,7 +207,7 @@ def run_sim(
         if config.sumocfg is None:
             raise ValueError("Sumo cfg file should not be none here")
 
-        data_collector = generate_data_collector(
+        link_collector, trip_collector = generate_data_collector(
             cfgfile=config.sumocfg,
             sim_steps=config.steps,
             pop_steps=pop_steps,
@@ -207,7 +220,9 @@ def run_sim(
             observe_list=config.observe_list,
         )
 
-        env_config = EnvConfig.from_sim_config(config, data_collector, vg_neighbors)
+        env_config = EnvConfig.from_sim_config(
+            config, link_collector, trip_collector, vg_neighbors
+        )
         environment = SumoEnvironment(env_config)
         return environment
 

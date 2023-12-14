@@ -445,7 +445,7 @@ class Vehicle:
 
     @property
     def cumulative_data(self) -> list[float]:
-        """Property that returns all the cumulative data from the last link traveled.
+        """Property that returns all the cumulative data from the last travel.
         The data regards travel time information as well as observed emissions in the current simulation.
 
         Returns:

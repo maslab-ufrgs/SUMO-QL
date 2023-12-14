@@ -16,7 +16,11 @@ from gym import spaces
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 from script_configs.configs import NonLearnerConfig, PQLConfig, QLConfig
-from sumo_drivers.collector.collector import LinkCollector, ObjectiveCollector
+from sumo_drivers.collector.collector import (
+    LinkCollector,
+    ObjectiveCollector,
+    TripCollector,
+)
 from sumo_drivers.environment.communication_device import CommunicationDevice
 from sumo_drivers.environment.od_pair import ODPair
 from sumo_drivers.environment.vehicle import Objectives, Vehicle
@@ -54,7 +58,8 @@ class EnvConfig:
     wrong_arrival_penalty: int
     communication_success_rate: float
     max_comm_dev_queue_size: int
-    data_collector: LinkCollector
+    link_collector: LinkCollector
+    trip_collector: TripCollector
     use_gui: bool
     objectives: list[str]
     fit_data_collect: bool
@@ -69,7 +74,8 @@ class EnvConfig:
     def from_sim_config(
         cls,
         config: NonLearnerConfig | QLConfig | PQLConfig,
-        data_collector: LinkCollector,
+        link_collector: LinkCollector,
+        trip_collector: TripCollector,
         vg_neighbors: dict,
     ) -> EnvConfig:
         if config.sumocfg is None:
@@ -85,7 +91,8 @@ class EnvConfig:
                     wrong_arrival_penalty=0,
                     communication_success_rate=0.0,
                     max_comm_dev_queue_size=0,
-                    data_collector=data_collector,
+                    link_collector=link_collector,
+                    trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=config.observe_list,
                     fit_data_collect=False,
@@ -107,7 +114,8 @@ class EnvConfig:
                     wrong_arrival_penalty=config.penalty,
                     communication_success_rate=config.communication.success_rate,
                     max_comm_dev_queue_size=config.communication.queue_size,
-                    data_collector=data_collector,
+                    link_collector=link_collector,
+                    trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=[config.objective],
                     fit_data_collect=config.collect_rewards,
@@ -131,7 +139,8 @@ class EnvConfig:
                     wrong_arrival_penalty=config.penalty,
                     communication_success_rate=config.communication.success_rate,
                     max_comm_dev_queue_size=config.communication.queue_size,
-                    data_collector=data_collector,
+                    link_collector=link_collector,
+                    trip_collector=trip_collector,
                     use_gui=config.gui,
                     objectives=config.objectives,
                     fit_data_collect=config.collect_rewards,
@@ -182,7 +191,8 @@ class SumoEnvironment(MultiAgentEnv):
         self.__current_step = 0
         self.__max_vehicles_running = config.max_vehicles
         self.__steps_to_populate = config.steps_to_populate
-        self.__link_collector = config.data_collector
+        self.__link_collector = config.link_collector
+        self.__trip_collector = config.trip_collector
         self.__action_space: dict[str, spaces.Discrete] = dict()
         self.__comm_dev: dict[str, CommunicationDevice] = dict()
         self.__vehicles: dict[str, Vehicle] = dict()
@@ -235,6 +245,7 @@ class SumoEnvironment(MultiAgentEnv):
 
     def reset(self):
         self.__link_collector.reset()
+        self.__trip_collector.reset()
         self.__current_step = 0
         sumo_cmd = [
             self.__sumo_bin,
@@ -286,6 +297,7 @@ class SumoEnvironment(MultiAgentEnv):
     def close(self) -> None:
         """Method that closes the traci run and saves collected data to csv files."""
         self.__link_collector.save()
+        self.__trip_collector.save()
         self.__link_collector.save_aggr_junction()
         if self.__data_fit is not None:
             self.__data_fit.save()
@@ -731,6 +743,7 @@ class SumoEnvironment(MultiAgentEnv):
         """
         rewards = dict()
         done = dict()
+        vehicle_data = []
         for vehicle_id in arrived_vehicles:
             self.__vehicles[vehicle_id].update_data(self.__current_step)
             try:
@@ -739,6 +752,7 @@ class SumoEnvironment(MultiAgentEnv):
                 print(error)
                 print(self.__vehicles[vehicle_id])
             done[vehicle_id] = True
+            vehicle_data.append(self.__vehicles[vehicle_id].cumulative_data)
 
             should_normalize = self.__not_collecting and self.__normalize_rewards
 
@@ -762,6 +776,8 @@ class SumoEnvironment(MultiAgentEnv):
             self.__observations[vehicle_id]["ready_to_act"] = False
 
             self.__verify_reinsertion_necessity(vehicle_id)
+        if len(vehicle_data) > 0:
+            self.__trip_collector.append_list(vehicle_data, self.__current_step)
 
         return rewards, done
 
