@@ -89,10 +89,11 @@ class CommunicationDevice:
         if link not in self.__data.keys():
             raise RuntimeError("Link is not connected to commDev's node")
 
-        incentive = 0
-        if self.__environment.get_link_destination_type(link) == "dead_end":
-            destiny = od_pair.split("|")[-1]
-            incentive += self._bonus if link.find(destiny) != -1 else self._penalty
+        # incentive = 0
+        # if self.__environment.get_link_destination_type(link) == "dead_end":
+        #     return
+        # destiny = od_pair.split("|")[-1]
+        # incentive += self._bonus if link.find(destiny) != -1 else self._penalty
 
         link_data = [
             reward
@@ -106,13 +107,15 @@ class CommunicationDevice:
             )
 
             if data_mean.size == nobj:  # if the amount of data is correct
-                return data_mean + incentive
+                return data_mean
+                # + incentive
             else:
                 print(f"Size data mean doesn't match number of objectives for {link}")
         # else:
         #     print(f"Empty link data list for {link}")
 
-        return np.zeros(shape=nobj) + incentive
+        return np.zeros(shape=nobj)
+        # + incentive
 
     def _are_neighbors(self, current_od: str, rw_od: str) -> bool:
         if not self.__od_graph:
@@ -161,6 +164,8 @@ class CommunicationDevice:
 
         for link in self.__node.getOutgoing():
             link_id = link.getID()
+            if self.__environment.get_link_destination_type(link_id) == "dead_end":
+                continue
 
             # gets data of neighboring commdev
             neighboring_comm_dev = self.__environment.get_comm_dev(
@@ -176,6 +181,8 @@ class CommunicationDevice:
         links_data = dict()
         for link in self.__node.getOutgoing():
             link_id: str = link.getID()
+            if self.__environment.get_link_destination_type(link_id) == "dead_end":
+                continue
 
             # gets data of neighboring commdev
             neighboring_comm_dev = self.__environment.get_comm_dev(
