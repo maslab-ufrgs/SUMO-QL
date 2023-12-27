@@ -325,11 +325,11 @@ class Vehicle:
         """
         try:
             node_id = self.__env.get_link_destination(self.current_link)
-            next_link_id = self.__env.get_action_link(node_id, action)
+            next_link_id = self.__env.get_action_link(node_id, action, self.vehicle_id)
             current_route = [self.current_link, next_link_id]
         except RuntimeError:
             node_id = self.origin
-            next_link_id = self.__env.get_action_link(node_id, action)
+            next_link_id = self.__env.get_action_link(node_id, action, self.vehicle_id)
             current_route = [next_link_id]
 
         try:

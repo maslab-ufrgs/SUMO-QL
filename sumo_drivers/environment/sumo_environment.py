@@ -10,6 +10,7 @@ import polars as pl
 
 import numpy as np
 import sumolib
+from sumolib.net.edge import Edge
 import traci
 import traci.constants as tc
 from gym import spaces
@@ -70,6 +71,7 @@ class EnvConfig:
     graph_neighbors: dict
     collect_od: bool
     od_graph: bool
+    allow_wrong_exits: bool
 
     @classmethod
     def from_sim_config(
@@ -104,6 +106,7 @@ class EnvConfig:
                     graph_neighbors=dict(),
                     collect_od=config.collect_od_data,
                     od_graph=False,
+                    allow_wrong_exits=False,
                 )
             case QLConfig(_):
                 print(f"Optimizing: {config.objective}")
@@ -130,6 +133,7 @@ class EnvConfig:
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
                     else False,
+                    allow_wrong_exits=not config.no_wrong_exits,
                 )
             case PQLConfig(_):
                 print(f"Optimizing: {config.objectives}")
@@ -156,6 +160,7 @@ class EnvConfig:
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
                     else False,
+                    allow_wrong_exits=not config.no_wrong_exits,
                 )
 
 
@@ -604,7 +609,7 @@ class SumoEnvironment(MultiAgentEnv):
                 self.__vehicles[vehicle_id].vehicle_id
             )
 
-    def get_action_link(self, node_id: str, action: int) -> str:
+    def get_action_link(self, node_id: str, action: int, vehicle_id: str) -> str:
         """Method that returns the link that corresponds to the action performed, given a node/state where it was
         performed.
 
@@ -624,7 +629,7 @@ class SumoEnvironment(MultiAgentEnv):
             print("Aborting simulation: action could not be chosen due to index error")
             print(f"Possible links: {link_ids}")
             print(
-                f"Action -{action}- tried should correspond to an index in the list above."
+                f"Action `{action}` tried should correspond to an index in the list above."
             )
             print(f"Node ID: {node.getID()}")
             self.close()
@@ -842,18 +847,17 @@ class SumoEnvironment(MultiAgentEnv):
         Returns:
             list[int]: list containing all the possible actions for the vehicle informed.
         """
-        available_links = self.__network.getEdge(
-            self.__vehicles[vehicle_id].current_link
-        ).getOutgoing()
-        available_actions = list()
+        available_links = [
+            link
+            for link in self.__network.getEdge(
+                self.__vehicles[vehicle_id].current_link
+            ).getOutgoing()
+            if self.__is_link_available(link, vehicle_id)
+        ]
         action_link = enumerate(
             self.__network.getNode(self.__vehicles[vehicle_id].route[-1]).getOutgoing()
         )
-        for action, link in action_link:
-            if link in available_links:
-                available_actions.append(action)
-
-        return available_actions
+        return [action for action, link in action_link if link in available_links]
 
     def __retrieve_observation_states(self, vehicle_id: str) -> None:
         """Method that updates the current and previous states of a given vehicle in the observation dictionary.
@@ -915,3 +919,12 @@ class SumoEnvironment(MultiAgentEnv):
                     if self.__vehicles[vehicle_id].od_pair == od
                 ]
             )
+
+    def __is_link_available(self, link: Edge, vehicle_id: str) -> bool:
+        if self.__config.allow_wrong_exits:
+            return True
+
+        return (
+            link.getToNode().getType() != "dead_end"
+            or link.getToNode().getID() == self.__vehicles[vehicle_id].destination
+        )

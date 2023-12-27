@@ -405,6 +405,15 @@ class LearningAgentConfig(BaseConfig):
         ),
     )
 
+    no_wrong_exits: bool = field(
+        default=False,
+        metadata=describe(
+            "Flag to indicate that wrong exits are not allowed for learning agents.",
+            group=main_group(),
+            rename="no-wrong-exits",
+        ),
+    )
+
     communication: CommunicationConfig = field(default_factory=CommunicationConfig)
     virtual_graph: GraphConfig = field(default_factory=GraphConfig)
 
