@@ -14,16 +14,16 @@
     
     
     <!-- medium routes         original values: 43 or 86 -->
-    <flow id="bottom1_top3" color="0,255,255"       from="bottom1B0" to="D4top3"     begin="0" end="100" number="53"/> 
+    <flow id="bottom1_top3" color="0,255,255"       from="bottom1B0" to="D4top3"     begin="0" end="100" number="86"/> 
     <!-- <flow id="top3_bottom1" color="0,150,150"       from="top3D4"    to="B0bottom1"  begin="0" end="100" number="53"/> -->
 
-    <flow id="bottom3_top1" color="255,0,255"       from="bottom3D0" to="B4top1"     begin="0" end="100" number="53"/>
+    <flow id="bottom3_top1" color="255,0,255"       from="bottom3D0" to="B4top1"     begin="0" end="100" number="86"/>
     <!-- <flow id="top1_bottom3" color="150,0,150"       from="top1B4"    to="D0bottom3"  begin="0" end="100" number="53"/> -->
     
-    <flow id="left1_right3" color="255,255,255"     from="left1A1"   to="E3right3"   begin="0" end="100" number="53"/>
+    <flow id="left1_right3" color="255,255,255"     from="left1A1"   to="E3right3"   begin="0" end="100" number="86"/>
     <!-- <flow id="right3_left1" color="150,150,150"     from="right3E3"  to="A1left1"    begin="0" end="100" number="53"/> -->
     
-    <flow id="left3_right1" color="255,150,0"       from="left3A3"   to="E1right1"   begin="0" end="100" number="53"/>
+    <flow id="left3_right1" color="255,150,0"       from="left3A3"   to="E1right1"   begin="0" end="100" number="86"/>
     <!-- <flow id="right1_left3" color="150,100,0"       from="right1E1"  to="A3left3"    begin="0" end="100" number="53"/> -->
 
 
