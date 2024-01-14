@@ -394,7 +394,9 @@ def run_sim(
     rd = SystemRandom()
     random_wait = rd.randint(0, 10000)
     print(f"waiting for: {random_wait} ms")
-    time.sleep(random_wait / 1000)
+    wait_start = (iteration * 2) + (random_wait / 1000)
+    print(f"Waiting for {wait_start}")
+    time.sleep(wait_start)
     run(iteration)
 
 
