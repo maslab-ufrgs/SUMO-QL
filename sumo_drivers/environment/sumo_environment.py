@@ -70,6 +70,7 @@ class EnvConfig:
     toll_penalty: int
     graph_neighbors: dict
     collect_od: bool
+    collect_link_data: bool
     od_graph: bool
     allow_wrong_exits: bool
 
@@ -105,6 +106,7 @@ class EnvConfig:
                     toll_penalty=0,
                     graph_neighbors=dict(),
                     collect_od=config.collect_od_data,
+                    collect_link_data=config.collect_link_data,
                     od_graph=False,
                     allow_wrong_exits=False,
                 )
@@ -130,6 +132,7 @@ class EnvConfig:
                     toll_penalty=config.toll_value,
                     graph_neighbors=vg_neighbors,
                     collect_od=config.collect_od_data,
+                    collect_link_data=config.collect_link_data,
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
                     else False,
@@ -157,6 +160,7 @@ class EnvConfig:
                     toll_penalty=config.toll_value,
                     graph_neighbors=vg_neighbors,
                     collect_od=config.collect_od_data,
+                    collect_link_data=config.collect_link_data,
                     od_graph=config.virtual_graph.od_graph
                     if config.virtual_graph is not None
                     else False,
@@ -253,7 +257,8 @@ class SumoEnvironment(MultiAgentEnv):
         print(f"Objectives: {len(self.__objectives.known_objectives)}")
 
     def reset(self):
-        self.__link_collector.reset()
+        if self.__config.collect_link_data:
+            self.__link_collector.reset()
         self.__trip_collector.reset()
         self.__current_step = 0
         sumo_cmd = [
@@ -281,11 +286,13 @@ class SumoEnvironment(MultiAgentEnv):
             self.__od_pairs[vehicle.od_pair].increase_load(vehicle.vehicle_id)
             vehicle.reset()
 
-        subs_params = [
-            CONVERSION_DICT[param] for param in self.__link_collector.watched_params[4:]
-        ]
-        for edge in self.__network.getEdges():
-            traci.edge.subscribe(edge.getID(), subs_params)
+        if self.__config.collect_link_data:
+            subs_params = [
+                CONVERSION_DICT[param]
+                for param in self.__link_collector.watched_params[4:]
+            ]
+            for edge in self.__network.getEdges():
+                traci.edge.subscribe(edge.getID(), subs_params)
 
         self.__populate_network()
         return self.__observations
@@ -305,9 +312,10 @@ class SumoEnvironment(MultiAgentEnv):
 
     def close(self) -> None:
         """Method that closes the traci run and saves collected data to csv files."""
-        self.__link_collector.save()
+        if self.__config.collect_link_data:
+            self.__link_collector.save()
+            self.__link_collector.save_aggr_junction()
         self.__trip_collector.save()
-        self.__link_collector.save_aggr_junction()
         if self.__data_fit is not None:
             self.__data_fit.save()
         if self.__config.collect_od:
@@ -319,7 +327,7 @@ class SumoEnvironment(MultiAgentEnv):
 
             od_data = pl.concat(od_dfs)
             od_data = od_data.sort(by="Step")
-            link_csv_name = Path(self.__link_collector.path_name)
+            link_csv_name = Path(self.__trip_collector.path_name)
             od_data.to_pandas().to_csv(
                 link_csv_name.with_name(f"{link_csv_name.stem}_ODs.csv"), index=False
             )
@@ -882,6 +890,9 @@ class SumoEnvironment(MultiAgentEnv):
         return self.__data_fit is None
 
     def __update_link_data(self):
+        if not self.__config.collect_link_data:
+            return
+
         step_data = {key: [] for key in self.__link_collector.watched_params}
         key_list = list(CONVERSION_DICT.keys())
         value_list = list(CONVERSION_DICT.values())

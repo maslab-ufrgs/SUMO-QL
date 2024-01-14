@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+import re
 from typing import Type, TypeAlias, TypeVar
 
 
@@ -78,6 +79,13 @@ class BaseConfig(EmptyConfig):
     aw: int = field(
         default=1,
         metadata=describe("Average in data collection window size.", shorten=True),
+    )
+    collect_link_data: bool = field(
+        default=False,
+        metadata=describe(
+            "Flag indicating if link data should be collected (this might generate really big files).",
+            rename="collect-link-data",
+        ),
     )
     gui: bool = field(
         default=False, metadata=describe("Use SUMO GUI flag.", shorten=True)
