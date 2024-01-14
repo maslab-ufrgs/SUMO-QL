@@ -1,10 +1,12 @@
 import logging
 import os
 import pickle
+from random import SystemRandom
 import sys
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
+import time
 
 import numpy as np
 
@@ -389,6 +391,10 @@ def run_sim(
 
     # Run the simulation
     env = create_environment(config, vg_neighbors)
+    rd = SystemRandom()
+    random_wait = rd.randint(0, 10000)
+    print(f"waiting for: {random_wait} ms")
+    time.sleep(random_wait / 1000)
     run(iteration)
 
 
